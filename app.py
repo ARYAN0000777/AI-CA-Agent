@@ -14,7 +14,6 @@ ai_client = genai.Client(api_key=AI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- SESSION STATE (Memory Setup) ---
-# Yeh ensure karega ki jab hum form edit karein, toh app refresh hoke data na bhool jaye
 if "scanned_data" not in st.session_state:
     st.session_state.scanned_data = None
 
@@ -26,7 +25,6 @@ st.title("🤖 AI CA Agent - Pro Dashboard")
 st.subheader("📤 Naya Bill Scan Karein")
 uploaded_file = st.file_uploader("Apne bill ki photo upload karein", type=["jpg", "png", "jpeg"])
 
-# Agar file hai aur memory me abhi koi data nahi hai, toh AI Button dikhao
 if uploaded_file is not None and st.session_state.scanned_data is None:
     if st.button("🚀 AI Se Data Nikalo"):
         with st.spinner("AI dimaag laga raha hai..."):
@@ -57,32 +55,27 @@ if uploaded_file is not None and st.session_state.scanned_data is None:
                 
                 # --- AI JUGGAAD CLEANER ---
                 raw_text = response.text.strip()
-                
-                # Agar AI ne ```json formatting lagayi hai, toh usko hata do
                 if raw_text.startswith("```json"):
-                    raw_text = raw_text[7:] # Aage se ```json hatao
+                    raw_text = raw_text[7:] 
                 if raw_text.endswith("```"):
-                    raw_text = raw_text[:-3] # Peeche se ``` hatao
+                    raw_text = raw_text[:-3] 
                     
-                raw_text = raw_text.strip() # Bacha hua extra space saaf karo
+                raw_text = raw_text.strip() 
                 
-                # Ab saaf data ko memory me save karo
                 st.session_state.scanned_data = json.loads(raw_text)
-                st.rerun() # Page refresh karo taaki form dikhe
+                st.rerun() 
                 
             except Exception as e:
                 st.error(f"❌ Kuch gadbad ho gayi: {e}")
 
 # --- 2. REVIEW & EDIT SCREEN ---
-# Agar memory me data hai, toh yeh Editable form dikhao
 if st.session_state.scanned_data is not None:
     st.warning("⚠️ Kripya AI ka data check karein. Agar koi galti hai toh yahan theek karke 'Save' dabayein.")
     
     data = st.session_state.scanned_data
     
-    # Form shuru
     with st.form("edit_form"):
-        col1, col2 = st.columns(2) # 2 Hisso me form ko bato
+        col1, col2 = st.columns(2) 
         
         with col1:
             v_name = st.text_input("Vendor Name", value=data.get("vendor_name", ""))
@@ -97,11 +90,9 @@ if st.session_state.scanned_data is not None:
             v_igst = st.number_input("IGST (₹)", value=float(data.get("igst_amount", 0.0)))
             v_total = st.number_input("Total Amount (₹)", value=float(data.get("total_amount", 0.0)))
 
-        # Final Submit Button
         submit_btn = st.form_submit_button("✅ Final Save to Database")
         
         if submit_btn:
-            # Edit kiya hua data naye packet me dalo
             final_data = {
                 "vendor_name": v_name, 
                 "gst_number": v_gst, 
@@ -115,10 +106,8 @@ if st.session_state.scanned_data is not None:
                 "total_amount": v_total, 
                 "category": v_cat
             }
-            # Naya pakka data Database me dalo
             supabase.table("invoices").insert(final_data).execute()
             
-            # Memory clear karo taaki agla bill scan ho sake
             st.session_state.scanned_data = None
             st.success("✅ Data Successfully Saved!")
             st.rerun()
@@ -136,14 +125,14 @@ try:
         st.info("Abhi tak koi bill scan nahi hua hai.")
 except Exception as e:
     st.error(f"Database error: {e}")
-    st.divider()
+
+st.divider()
 
 # --- 4. TALLY EXPORT ENGINE (THE FINAL BOSS) ---
 st.subheader("🎯 Export to Tally (XML)")
 st.markdown("Database ke saare verified bills ko ek click me Tally XML me convert karein.")
 
 def generate_tally_xml(invoices_data):
-    # Yeh XML ka dacha (skeleton) hai jo Tally ko samajh aata hai
     xml_data = """<ENVELOPE>
     <HEADER>
         <TALLYREQUEST>Import Data</TALLYREQUEST>
@@ -155,45 +144,48 @@ def generate_tally_xml(invoices_data):
             </REQUESTDESC>
             <REQUESTDATA>"""
             
-    # Har bill ke liye ek Tally Entry (Voucher) banayenge
     for inv in invoices_data:
-        # Date format ko theek karna (DD-MM-YYYY se YYYYMMDD)
-        raw_date = inv.get("invoice_date", "2026-03-27").replace("-", "") 
+        # THE FIX: Safely handling None values
+        raw_date = str(inv.get("invoice_date") or "2026-03-27").replace("-", "") 
+        total_amt = float(inv.get('total_amount') or 0)
+        base_price = float(inv.get('base_price') or 0)
+        igst_amt = float(inv.get('igst_amount') or 0)
+        v_name = str(inv.get('vendor_name') or 'Unknown')
+        v_cat = str(inv.get('category') or '')
         
         xml_data += f"""
                 <TALLYMESSAGE xmlns:UDF="TallyUDF">
                     <VOUCHER VCHTYPE="Purchase" ACTION="Create">
                         <DATE>{raw_date}</DATE>
                         <VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
-                        <PARTYLEDGERNAME>{inv.get('vendor_name', 'Unknown')}</PARTYLEDGERNAME>
-                        <NARRATION>Bill Auto-Generated by AI CA Agent. Category: {inv.get('category', '')}</NARRATION>
+                        <PARTYLEDGERNAME>{v_name}</PARTYLEDGERNAME>
+                        <NARRATION>Bill Auto-Generated by AI CA Agent. Category: {v_cat}</NARRATION>
                         
                         <ALLLEDGERENTRIES.LIST>
-                            <LEDGERNAME>{inv.get('vendor_name', 'Unknown')}</LEDGERNAME>
+                            <LEDGERNAME>{v_name}</LEDGERNAME>
                             <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-                            <AMOUNT>{inv.get('total_amount', 0)}</AMOUNT>
+                            <AMOUNT>{total_amt}</AMOUNT>
                         </ALLLEDGERENTRIES.LIST>
                         
                         <ALLLEDGERENTRIES.LIST>
                             <LEDGERNAME>Purchase A/c</LEDGERNAME>
                             <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-{inv.get('base_price', 0)}</AMOUNT>
+                            <AMOUNT>-{base_price}</AMOUNT>
                         </ALLLEDGERENTRIES.LIST>"""
                         
-        # IGST Entry (Agar hai toh)
-        if inv.get('igst_amount', 0) > 0:
+        # IGST Entry (Ab yahan error nahi aayega!)
+        if igst_amt > 0:
             xml_data += f"""
                         <ALLLEDGERENTRIES.LIST>
                             <LEDGERNAME>Input IGST</LEDGERNAME>
                             <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-                            <AMOUNT>-{inv.get('igst_amount', 0)}</AMOUNT>
+                            <AMOUNT>-{igst_amt}</AMOUNT>
                         </ALLLEDGERENTRIES.LIST>"""
                         
         xml_data += """
                     </VOUCHER>
                 </TALLYMESSAGE>"""
                 
-    # XML Band karna
     xml_data += """
             </REQUESTDATA>
         </IMPORTDATA>
@@ -201,7 +193,6 @@ def generate_tally_xml(invoices_data):
 </ENVELOPE>"""
     return xml_data
 
-# Agar database me data hai, toh Download button dikhao
 if 'db_data' in locals() and len(db_data) > 0:
     tally_xml = generate_tally_xml(db_data)
     
