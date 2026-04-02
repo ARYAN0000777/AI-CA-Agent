@@ -4,11 +4,10 @@ from google import genai
 from PIL import Image
 from supabase import create_client, Client
 
-# --- SETUP KEYS (Apni asli keys yahan daalna) ---
-AI_API_KEY = "AIzaSyCtPMfZXfWCqtXkuGnYYggkvyAyuV-vhRw"
-SUPABASE_URL = "https://vaiafjkhevagdyzgrcjs.supabase.co"
-SUPABASE_KEY = "sb_publishable_UzobnS8S3kYmKxG08DjdXw_gvrXJWgu"
-
+# --- SETUP KEYS (Tijori se nikal rahe hain) ---
+AI_API_KEY = st.secrets["AI_API_KEY"]
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 # --- INITIALIZE TOOLS ---
 ai_client = genai.Client(api_key=AI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
