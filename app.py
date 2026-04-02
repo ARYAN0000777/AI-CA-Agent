@@ -55,8 +55,19 @@ if uploaded_file is not None and st.session_state.scanned_data is None:
                     contents=[img, prompt]
                 )
                 
-                # Data ko temporary memory me save karo (Database me nahi)
-                st.session_state.scanned_data = json.loads(response.text.strip())
+                # --- AI JUGGAAD CLEANER ---
+                raw_text = response.text.strip()
+                
+                # Agar AI ne ```json formatting lagayi hai, toh usko hata do
+                if raw_text.startswith("```json"):
+                    raw_text = raw_text[7:] # Aage se ```json hatao
+                if raw_text.endswith("```"):
+                    raw_text = raw_text[:-3] # Peeche se ``` hatao
+                    
+                raw_text = raw_text.strip() # Bacha hua extra space saaf karo
+                
+                # Ab saaf data ko memory me save karo
+                st.session_state.scanned_data = json.loads(raw_text)
                 st.rerun() # Page refresh karo taaki form dikhe
                 
             except Exception as e:
