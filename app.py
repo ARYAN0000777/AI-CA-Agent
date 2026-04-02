@@ -4,27 +4,17 @@ from google import genai
 from PIL import Image
 from supabase import create_client, Client
 
-# ==========================================
-# 1. UI CONFIGURATION & THEME
-# ==========================================
-st.set_page_config(page_title="KhataAI - Pro CA Agent", page_icon="⚡", layout="wide")
-
-# Hide Streamlit Branding
+# --- 1. UI SETUP ---
+st.set_page_config(page_title="KhataAI Automation", page_icon="⚡", layout="wide")
 hide_st_style = """
             <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            div.stButton > button:first-child {
-                background-color: #4F46E5; color: white; border-radius: 8px; padding: 10px 24px; font-weight: bold;
-            }
+            #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+            div.stButton > button:first-child { background-color: #4F46E5; color: white; border-radius: 8px; padding: 10px 24px; font-weight: bold; }
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
-# ==========================================
-# 2. SETUP KEYS & TOOLS
-# ==========================================
+# --- 2. KEYS & DATABASE ---
 AI_API_KEY = st.secrets["AI_API_KEY"]
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
@@ -32,37 +22,29 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 ai_client = genai.Client(api_key=AI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Session State for App Memory
 if "scanned_data" not in st.session_state:
     st.session_state.scanned_data = None
 
-# Fetch Data from Database
 try:
     response = supabase.table("invoices").select("*").order("id", desc=True).execute()
     db_data = response.data
 except Exception:
     db_data = []
 
-# ==========================================
-# 3. APP HEADER
-# ==========================================
+# --- 3. HEADER ---
 st.title("⚡ KhataAI - Smart CA Assistant")
 st.markdown("Automate your bill entries to Tally instantly. Powered by AI.")
 st.write("---")
 
-# ==========================================
-# 4. MAIN TABS
-# ==========================================
 tab1, tab2, tab3 = st.tabs(["📸 Scan New Bill", "📊 Analytics & Manage", "⚙️ Export to Tally"])
 
-# ------------------------------------------
+# ==========================================
 # TAB 1: SCAN & EDIT SCREEN
-# ------------------------------------------
+# ==========================================
 with tab1:
     st.subheader("Upload Bill Image")
     uploaded_file = st.file_uploader("Drag & drop invoice here", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
 
-    # Step 1: AI Extraction
     if uploaded_file is not None and st.session_state.scanned_data is None:
         if st.button("🚀 Extract Data with AI"):
             with st.spinner("AI is analyzing the invoice..."):
@@ -70,37 +52,23 @@ with tab1:
                     img = Image.open(uploaded_file)
                     prompt = """
                     You are an expert Data Extractor for an Indian CA. 
-                    Read this invoice and extract details. 
-                    For 'product_names', list the items purchased separated by commas.
-                    Return ONLY a valid JSON.
+                    Extract details from invoice. For 'product_names', list items separated by commas.
+                    Return ONLY a valid JSON:
                     {
-                      "vendor_name": "...",
-                      "gst_number": "...",
-                      "invoice_number": "...",
-                      "invoice_date": "DD-MM-YYYY",
-                      "product_names": "...",
-                      "base_price": 0.00,
-                      "cgst_amount": 0.00,
-                      "sgst_amount": 0.00,
-                      "igst_amount": 0.00,
-                      "total_amount": 0.00,
-                      "category": "..."
+                      "vendor_name": "...", "gst_number": "...", "invoice_number": "...",
+                      "invoice_date": "DD-MM-YYYY", "product_names": "...",
+                      "base_price": 0.00, "cgst_amount": 0.00, "sgst_amount": 0.00,
+                      "igst_amount": 0.00, "total_amount": 0.00, "category": "..."
                     }
                     """
                     response = ai_client.models.generate_content(model='gemini-2.5-flash', contents=[img, prompt])
                     
-                    # Bulletproof AI Cleaner
-                    raw_text = response.text.strip()
-                    raw_text = raw_text.replace("```json", "")
-                    raw_text = raw_text.replace("```", "")
-                    raw_text = raw_text.strip() 
-                    
+                    raw_text = response.text.strip().replace("```json", "").replace("```", "").strip() 
                     st.session_state.scanned_data = json.loads(raw_text)
                     st.rerun() 
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
 
-    # Step 2: Review & Edit Form
     if st.session_state.scanned_data is not None:
         st.info("💡 Please verify the extracted data below and save.")
         data = st.session_state.scanned_data
@@ -135,9 +103,9 @@ with tab1:
                 st.success("Saved successfully!")
                 st.rerun()
 
-# ------------------------------------------
-# TAB 2: DASHBOARD & DELETE FEATURE
-# ------------------------------------------
+# ==========================================
+# TAB 2: DASHBOARD & DELETE FEATURE (DONO EK SATH)
+# ==========================================
 with tab2:
     st.subheader("Business Analytics")
     
@@ -155,7 +123,7 @@ with tab2:
     if len(db_data) > 0:
         st.dataframe(db_data, use_container_width=True, hide_index=True)
         
-        # CRUD - Delete Feature
+        # --- THE DELETE FEATURE ---
         st.write("---")
         with st.expander("🗑️ Manage Bills (Delete Data)"):
             st.warning("⚠️ Warning: Data deleted from here cannot be recovered.")
@@ -174,12 +142,12 @@ with tab2:
     else:
         st.info("No bills scanned yet.")
 
-# ------------------------------------------
-# TAB 3: TALLY EXPORT (ADVANCED)
-# ------------------------------------------
+# ==========================================
+# TAB 3: ADVANCED TALLY EXPORT (PURCHASE ENTRY)
+# ==========================================
 with tab3:
     st.subheader("Tally XML Generator")
-    st.markdown("Download detailed Tally XML file with Item Names and Invoice Numbers.")
+    st.markdown("Download detailed Tally XML file with **Item Names** and **Invoice Numbers**.")
     
     def generate_tally_xml(invoices_data):
         xml_data = "<ENVELOPE>\n<HEADER>\n<TALLYREQUEST>Import Data</TALLYREQUEST>\n</HEADER>\n<BODY>\n<IMPORTDATA>\n<REQUESTDESC>\n<REPORTNAME>Vouchers</REPORTNAME>\n</REQUESTDESC>\n<REQUESTDATA>\n"
@@ -192,6 +160,7 @@ with tab3:
             sgst_amt = float(inv.get('sgst_amount') or 0)
             igst_amt = float(inv.get('igst_amount') or 0)
             
+            # Anti-Crash trick for Tally (replaces & with &amp;)
             v_name = str(inv.get('vendor_name') or 'Unknown').replace("&", "&amp;")
             v_inv_no = str(inv.get('invoice_number') or 'Not Found').replace("&", "&amp;")
             v_prods = str(inv.get('product_names') or 'Various Items').replace("&", "&amp;")
@@ -199,14 +168,23 @@ with tab3:
             xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n'
             xml_data += f'<VOUCHER VCHTYPE="Purchase" ACTION="Create">\n'
             xml_data += f'<DATE>{raw_date}</DATE>\n'
+            
+            # 1. INVOICE NUMBER YAHAN HAI
             xml_data += f'<REFERENCE>{v_inv_no}</REFERENCE>\n'
+            
             xml_data += f'<VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>\n'
             xml_data += f'<PARTYLEDGERNAME>{v_name}</PARTYLEDGERNAME>\n'
+            
+            # 2. PRODUCT KA NAAM YAHAN HAI
             xml_data += f'<NARRATION>Bill No: {v_inv_no} | Items: {v_prods}</NARRATION>\n'
             
+            # Ledger Entries
             xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>{v_name}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n<AMOUNT>{total_amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
+            
+            # 3. PURCHASE ACCOUNT YAHAN HAI
             xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Purchase A/c</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{base_price}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
             
+            # Taxes
             if cgst_amt > 0:
                 xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Input CGST</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{cgst_amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
             if sgst_amt > 0:
