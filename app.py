@@ -29,14 +29,21 @@ if uploaded_file is not None:
                 # Photo Load Karo
                 img = Image.open(uploaded_file)
                 
-                # AI Prompt
                 prompt = """
-                You are an expert Data Extractor for an Indian CA. 
-                Read this invoice image and extract the details.
-                Return ONLY a valid JSON dictionary in this exact format. Do NOT use markdown blocks like ```json.
+                You are an expert Data Extractor for an Indian Chartered Accountant. 
+                Read this invoice image and extract the complete tax and billing details.
+                If any value is missing (like TDS or IGST), just output 0.00. If GST number is missing, output "Not Found".
+                Return ONLY a valid JSON dictionary in this exact format. Do NOT use markdown blocks.
                 {
                   "vendor_name": "...",
+                  "gst_number": "...",
                   "invoice_date": "DD-MM-YYYY",
+                  "base_price": 0.00,
+                  "cgst_amount": 0.00,
+                  "sgst_amount": 0.00,
+                  "igst_amount": 0.00,
+                  "total_gst_amount": 0.00,
+                  "tds_amount": 0.00,
                   "total_amount": 0.00,
                   "category": "..."
                 }
