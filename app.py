@@ -4,36 +4,38 @@ from google import genai
 from PIL import Image
 from supabase import create_client, Client
 
-# --- SETUP KEYS (Tijori se nikal rahe hain) ---
+# --- SETUP KEYS (Tijori se) ---
 AI_API_KEY = st.secrets["AI_API_KEY"]
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
 # --- INITIALIZE TOOLS ---
 ai_client = genai.Client(api_key=AI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- DASHBOARD UI BANANA SHURU ---
-st.set_page_config(page_title="AI CA Agent", page_icon="📈", layout="wide")
-st.title("🤖 AI CA Agent - Startup Dashboard")
-st.markdown("Welcome Aryan! Apne bills upload karo aur AI ko apna jaadu karne do.")
+# --- SESSION STATE (Memory Setup) ---
+# Yeh ensure karega ki jab hum form edit karein, toh app refresh hoke data na bhool jaye
+if "scanned_data" not in st.session_state:
+    st.session_state.scanned_data = None
+
+# --- DASHBOARD UI ---
+st.set_page_config(page_title="AI CA Agent Pro", page_icon="📈", layout="wide")
+st.title("🤖 AI CA Agent - Pro Dashboard")
 
 # --- 1. UPLOAD SECTION ---
 st.subheader("📤 Naya Bill Scan Karein")
-uploaded_file = st.file_uploader("Apne bill ki photo yahan drag & drop karein", type=["jpg", "png", "jpeg"])
+uploaded_file = st.file_uploader("Apne bill ki photo upload karein", type=["jpg", "png", "jpeg"])
 
-if uploaded_file is not None:
-    # Button banaya AI ko chalane ke liye
+# Agar file hai aur memory me abhi koi data nahi hai, toh AI Button dikhao
+if uploaded_file is not None and st.session_state.scanned_data is None:
     if st.button("🚀 AI Se Data Nikalo"):
-        with st.spinner("AI dimaag laga raha hai... kripya wait karein..."):
+        with st.spinner("AI dimaag laga raha hai..."):
             try:
-                # Photo Load Karo
                 img = Image.open(uploaded_file)
-                
                 prompt = """
-                You are an expert Data Extractor for an Indian Chartered Accountant. 
-                Read this invoice image and extract the complete tax and billing details.
-                If any value is missing (like TDS or IGST), just output 0.00. If GST number is missing, output "Not Found".
-                Return ONLY a valid JSON dictionary in this exact format. Do NOT use markdown blocks.
+                You are an expert Data Extractor for an Indian CA. 
+                Read this invoice image and extract details. If value is missing, output 0.00 or 'Not Found'.
+                Return ONLY a valid JSON.
                 {
                   "vendor_name": "...",
                   "gst_number": "...",
@@ -48,34 +50,77 @@ if uploaded_file is not None:
                   "category": "..."
                 }
                 """
-                
-                # AI se result mango
                 response = ai_client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=[img, prompt]
                 )
                 
-                # Data ko JSON me badlo aur Database me dalo
-                bill_data = json.loads(response.text.strip())
-                supabase.table("invoices").insert(bill_data).execute()
-                
-                st.success("✅ Bill Successfully Scanned aur Database me Save ho gaya!")
-                st.rerun() # Page ko refresh karne ke liye taaki table update ho jaye
+                # Data ko temporary memory me save karo (Database me nahi)
+                st.session_state.scanned_data = json.loads(response.text.strip())
+                st.rerun() # Page refresh karo taaki form dikhe
                 
             except Exception as e:
                 st.error(f"❌ Kuch gadbad ho gayi: {e}")
 
+# --- 2. REVIEW & EDIT SCREEN ---
+# Agar memory me data hai, toh yeh Editable form dikhao
+if st.session_state.scanned_data is not None:
+    st.warning("⚠️ Kripya AI ka data check karein. Agar koi galti hai toh yahan theek karke 'Save' dabayein.")
+    
+    data = st.session_state.scanned_data
+    
+    # Form shuru
+    with st.form("edit_form"):
+        col1, col2 = st.columns(2) # 2 Hisso me form ko bato
+        
+        with col1:
+            v_name = st.text_input("Vendor Name", value=data.get("vendor_name", ""))
+            v_gst = st.text_input("GST Number", value=data.get("gst_number", ""))
+            v_date = st.text_input("Invoice Date", value=data.get("invoice_date", ""))
+            v_cat = st.text_input("Category", value=data.get("category", ""))
+        
+        with col2:
+            v_base = st.number_input("Base Price (₹)", value=float(data.get("base_price", 0.0)))
+            v_cgst = st.number_input("CGST (₹)", value=float(data.get("cgst_amount", 0.0)))
+            v_sgst = st.number_input("SGST (₹)", value=float(data.get("sgst_amount", 0.0)))
+            v_igst = st.number_input("IGST (₹)", value=float(data.get("igst_amount", 0.0)))
+            v_total = st.number_input("Total Amount (₹)", value=float(data.get("total_amount", 0.0)))
+
+        # Final Submit Button
+        submit_btn = st.form_submit_button("✅ Final Save to Database")
+        
+        if submit_btn:
+            # Edit kiya hua data naye packet me dalo
+            final_data = {
+                "vendor_name": v_name, 
+                "gst_number": v_gst, 
+                "invoice_date": v_date,
+                "base_price": v_base, 
+                "cgst_amount": v_cgst, 
+                "sgst_amount": v_sgst,
+                "igst_amount": v_igst, 
+                "total_gst_amount": v_cgst + v_sgst + v_igst,
+                "tds_amount": float(data.get("tds_amount", 0.0)), 
+                "total_amount": v_total, 
+                "category": v_cat
+            }
+            # Naya pakka data Database me dalo
+            supabase.table("invoices").insert(final_data).execute()
+            
+            # Memory clear karo taaki agla bill scan ho sake
+            st.session_state.scanned_data = None
+            st.success("✅ Data Successfully Saved!")
+            st.rerun()
+
 st.divider()
 
-# --- 2. DATABASE TABLE SECTION ---
+# --- 3. DATABASE TABLE SECTION ---
 st.subheader("📋 Aapke Scanned Bills")
-
 try:
     response = supabase.table("invoices").select("*").order("id", desc=True).execute()
-    data = response.data
-    
-    if len(data) > 0:
-        st.dataframe(data, use_container_width=True)
+    db_data = response.data
+    if len(db_data) > 0:
+        st.dataframe(db_data, use_container_width=True)
     else:
         st.info("Abhi tak koi bill scan nahi hua hai.")
 except Exception as e:
