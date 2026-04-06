@@ -210,36 +210,83 @@ with tab2:
         st.info("No bills scanned yet.")
 
 # ══════════════════════════════════════════════
-# TAB 3: TALLY EXPORT
+# TAB 3: TALLY EXPORT (MASTER AUTO-CREATION + ITEM INVOICE)
 # ══════════════════════════════════════════════
 with tab3:
     def generate_tally_xml(invoices_data):
-        xml_data = "<ENVELOPE>\n<HEADER>\n<TALLYREQUEST>Import Data</TALLYREQUEST>\n</HEADER>\n<BODY>\n<IMPORTDATA>\n<REQUESTDESC>\n<REPORTNAME>Vouchers</REPORTNAME>\n</REQUESTDESC>\n<REQUESTDATA>\n"
+        xml_data = "<ENVELOPE>\n<HEADER>\n<TALLYREQUEST>Import Data</TALLYREQUEST>\n</HEADER>\n<BODY>\n<IMPORTDATA>\n<REQUESTDESC>\n<REPORTNAME>All Masters</REPORTNAME>\n</REQUESTDESC>\n<REQUESTDATA>\n"
+        
+        unique_parties = set()
+        unique_items = set()
+
+        # Step 1: Data ikattha karna Masters banane ke liye
+        for inv in invoices_data:
+            party_name = str(inv.get('vendor_name') or 'Unknown').replace("&", "&amp;")
+            unique_parties.add(party_name)
+            
+            line_items = inv.get('line_items') or []
+            if isinstance(line_items, list):
+                for itm in line_items:
+                    item_name = str(itm.get('item_name', '')).replace("&", "&amp;")
+                    unit = str(itm.get('unit', 'Nos')).replace("&", "&amp;")
+                    if item_name: unique_items.add((item_name, unit))
+
+        # Step 2: AUTO-CREATE PARTY LEDGERS (Sundry Creditors)
+        for party in unique_parties:
+            xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n<LEDGER ACTION="Create">\n<NAME>{party}</NAME>\n<PARENT>Sundry Creditors</PARENT>\n</LEDGER>\n</TALLYMESSAGE>\n'
+
+        # Step 3: AUTO-CREATE STOCK ITEMS (Primary)
+        for item, unit in unique_items:
+            # Note: Tally me unit bhi pehle se honi chahiye, hum yahan basic pass kar rahe hain
+            xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n<STOCKITEM ACTION="Create">\n<NAME>{item}</NAME>\n<PARENT>Primary</PARENT>\n<BASEUNITS>{unit}</BASEUNITS>\n</STOCKITEM>\n</TALLYMESSAGE>\n'
+
+        # Step 4: PROPER ITEM-INVOICE VOUCHER ENTRY
         for inv in invoices_data:
             raw_date = str(inv.get("invoice_date") or "2026-03-27").replace("-", "")
             v_name = str(inv.get('vendor_name') or 'Unknown').replace("&", "&amp;")
             v_inv_no = str(inv.get('invoice_number') or 'Not Found').replace("&", "&amp;")
+            total_amt = float(inv.get('total_amount') or 0)
             
-            # Smart Narration Builder
+            xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n<VOUCHER VCHTYPE="Purchase" ACTION="Create">\n<DATE>{raw_date}</DATE>\n<REFERENCE>{v_inv_no}</REFERENCE>\n<VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>\n<PARTYLEDGERNAME>{v_name}</PARTYLEDGERNAME>\n'
+            
+            # Party Credit
+            xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>{v_name}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n<AMOUNT>{total_amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
+            
+            # Items Debit (PROPER INVENTORY FORMAT)
             line_items = inv.get('line_items') or []
             if isinstance(line_items, list) and len(line_items) > 0:
-                item_strings = [f"{idx+1}) {str(itm.get('item_name','')).replace('&','&amp;')} (HSN:{itm.get('hsn_code','')}) - {itm.get('quantity','')}qty @ {itm.get('rate','')}" for idx, itm in enumerate(line_items)]
-                final_narration = " | ".join(item_strings)
+                for itm in line_items:
+                    i_name = str(itm.get('item_name', '')).replace("&", "&amp;")
+                    i_qty = float(itm.get('quantity') or 0)
+                    i_rate = float(itm.get('rate') or 0)
+                    i_amt = float(itm.get('amount') or 0)
+                    i_unit = str(itm.get('unit', 'Nos')).replace("&", "&amp;")
+                    
+                    xml_data += f'<ALLINVENTORYENTRIES.LIST>\n'
+                    xml_data += f'<STOCKITEMNAME>{i_name}</STOCKITEMNAME>\n'
+                    xml_data += f'<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n'
+                    xml_data += f'<BILLEDQTY>{i_qty} {i_unit}</BILLEDQTY>\n'
+                    xml_data += f'<RATE>{i_rate}</RATE>\n'
+                    xml_data += f'<AMOUNT>-{i_amt}</AMOUNT>\n'
+                    # Accounting allocation zaroori hota hai inventory ke sath
+                    xml_data += f'<ACCOUNTINGALLOCATIONS.LIST>\n<LEDGERNAME>Purchase A/c</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{i_amt}</AMOUNT>\n</ACCOUNTINGALLOCATIONS.LIST>\n'
+                    xml_data += f'</ALLINVENTORYENTRIES.LIST>\n'
             else:
-                final_narration = str(inv.get('product_names') or 'Various Items').replace("&", "&amp;")
-
-            xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n<VOUCHER VCHTYPE="Purchase" ACTION="Create">\n<DATE>{raw_date}</DATE>\n<REFERENCE>{v_inv_no}</REFERENCE>\n<VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>\n<PARTYLEDGERNAME>{v_name}</PARTYLEDGERNAME>\n<NARRATION>Bill No: {v_inv_no} | Items: {final_narration}</NARRATION>\n'
-            xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>{v_name}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n<AMOUNT>{float(inv.get("total_amount") or 0)}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
-            xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Purchase A/c</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{float(inv.get("base_price") or 0)}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
+                base_price = float(inv.get("base_price") or 0)
+                xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Purchase A/c</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{base_price}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
             
+            # Taxes
             for tax_type, amt in [("CGST", float(inv.get("cgst_amount") or 0)), ("SGST", float(inv.get("sgst_amount") or 0)), ("IGST", float(inv.get("igst_amount") or 0))]:
-                if amt > 0: xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Input {tax_type}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
+                if amt > 0: 
+                    xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>Input {tax_type}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n<AMOUNT>-{amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
+                    
             xml_data += '</VOUCHER>\n</TALLYMESSAGE>\n'
+            
         xml_data += "</REQUESTDATA>\n</IMPORTDATA>\n</BODY>\n</ENVELOPE>"
         return xml_data
 
     if len(db_data) > 0:
-        st.markdown('<div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download Tally XML</div><div class="export-desc">All invoices packaged with proper Item Details in Narration.</div></div><br>', unsafe_allow_html=True)
-        st.download_button("📥 Download KhataAI_Import.xml", data=generate_tally_xml(db_data), file_name="KhataAI_Pro_Import.xml", mime="application/xml", use_container_width=True)
+        st.markdown('<div class="export-card"><span class="export-icon">📦</span><div class="export-title">Download Master Tally XML</div><div class="export-desc">This file will AUTO-CREATE Party & Item Ledgers in Tally before posting the Purchase entry!</div></div><br>', unsafe_allow_html=True)
+        st.download_button("📥 Download Auto-Ledger Tally XML", data=generate_tally_xml(db_data), file_name="KhataAI_Pro_Import.xml", mime="application/xml", use_container_width=True)
     else:
         st.info("No bills scanned yet.")
