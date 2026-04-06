@@ -176,6 +176,8 @@ with tab2:
 
     if total_bills > 0:
         display_df = pd.DataFrame(db_data)
+        
+        # 1. Items ka naam nikalne wala function
         def get_item_names(row):
             items = row.get('line_items')
             if isinstance(items, list) and len(items) > 0: return ", ".join([str(i.get('item_name', '')) for i in items if i.get('item_name')])
@@ -183,19 +185,29 @@ with tab2:
             return "No Items"
             
         display_df['Items_Summary'] = display_df.apply(get_item_names, axis=1)
-        display_df = display_df.drop(columns=['line_items', 'product_names'], errors='ignore')
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        # --- NAYA JADOO: Dynamic Serial Number ---
+        # Yeh list jitni lambi hogi, 1, 2, 3... khud laga dega
+        display_df.insert(0, 'Sr_No', range(1, len(display_df) + 1))
+        
+        # Database ki 'id' aur gande columns ko screen se chupao (Cloud me safe rahenge)
+        display_df_ui = display_df.drop(columns=['id', 'line_items', 'product_names'], errors='ignore')
+        
+        # Table dikhao
+        st.dataframe(display_df_ui, use_container_width=True, hide_index=True)
 
         with st.expander("🗑️ Danger Zone — Delete a Bill"):
-            bill_options = {f"ID {row['id']} | {row.get('vendor_name', 'Unknown')} | ₹{row.get('total_amount', 0)}": row['id'] for row in db_data}
+            # Yahan dropdown me bhi Sr_No dikhayenge taaki delete karne me asani ho
+            bill_options = {f"Sr No: {idx+1} | {row.get('vendor_name', 'Unknown')} | ₹{row.get('total_amount', 0)}": row['id'] for idx, row in enumerate(db_data)}
             selected_bill = st.selectbox("Select bill to delete:", options=list(bill_options.keys()))
-            if st.button("❌ Delete Selected Bill"):
+            
+            if st.button("❌ Delete Selected Bill from Cloud"):
+                # Yeh line pakka Cloud (Supabase) se data uda deti hai
                 supabase.table("invoices").delete().eq("id", bill_options[selected_bill]).execute()
-                st.success("Bill deleted.")
+                st.success("✅ Bill permanently deleted from Cloud & App!")
                 st.rerun()
     else:
         st.info("No bills scanned yet.")
-
 # ══════════════════════════════════════════════
 # TAB 3: TALLY EXPORT (MASTER CREATION W/ ADDRESS & BANK)
 # ══════════════════════════════════════════════
