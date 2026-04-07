@@ -5,6 +5,7 @@ from google import genai
 from google.genai import types
 from PIL import Image
 from supabase import create_client, Client
+from fpdf import FPDF
 
 # ─────────────────────────────────────────────
 # 1. PAGE CONFIG & ORIGINAL CLAUDE DARK THEME
@@ -439,7 +440,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["📸 Scan Invoice", "🎙️ Voice Bill", "📊 Analytics", "⚙️ Tally Export"])
+tab1, tab2, tab3, tab4 = st.tabs(["📸 Scan Invoice", "🎙️ Voice Bill", "📊 Analytics & PDF", "⚙️ Tally Export"])
 
 # ══════════════════════════════════════════════
 # TAB 1 — SCAN & EDIT
@@ -449,7 +450,6 @@ with tab1:
 
     with col_upload:
         st.markdown('<div class="step-row"><div class="step-num">1</div><div class="step-label">Upload your GST invoice image</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">📂 Upload Invoice <span class="section-badge">AI-POWERED</span></div>', unsafe_allow_html=True)
         uploaded_file = st.file_uploader("Drop your GST invoice here", type=["jpg","png","jpeg"], label_visibility="collapsed")
 
         if uploaded_file is not None and st.session_state.scanned_data is None:
@@ -500,13 +500,13 @@ with tab1:
             
             st.markdown("**🏢 Party Details**")
             r1c1, r1c2, r1c3 = st.columns(3)
-            with r1c1: v_name = st.text_input("Vendor Name",  value=data.get("vendor_name",""))
+            with r1c1: v_name = st.text_input("Party Name",  value=data.get("vendor_name",""))
             with r1c2: v_gst  = st.text_input("GST Number",   value=data.get("gst_number",""))
             with r1c3: v_cat  = st.text_input("Category",     value=data.get("category",""))
 
             r2c1, r2c2 = st.columns(2)
-            with r2c1: v_addr = st.text_input("Vendor Address", value=data.get("vendor_address",""))
-            with r2c2: v_bank = st.text_input("Bank Details (A/c & IFSC)", value=data.get("bank_details",""))
+            with r2c1: v_addr = st.text_input("Address", value=data.get("vendor_address",""))
+            with r2c2: v_bank = st.text_input("Bank Details", value=data.get("bank_details",""))
 
             r3c1, r3c2 = st.columns(2)
             with r3c1: v_inv_no = st.text_input("Invoice Number", value=data.get("invoice_number",""))
@@ -526,7 +526,7 @@ with tab1:
             with a5: v_total = st.number_input("Total ₹",      value=float(data.get("total_amount",0.0)))
 
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.form_submit_button("✅ Save Full Bill to Cloud", use_container_width=True):
+            if st.form_submit_button("✅ Save Bill to Cloud", use_container_width=True):
                 final_data = {
                     "voucher_type": v_type, "vendor_name": v_name, "gst_number": v_gst, "vendor_address": v_addr,
                     "bank_details": v_bank, "invoice_date": v_date, "invoice_number": v_inv_no,
@@ -537,14 +537,14 @@ with tab1:
                 }
                 supabase.table("invoices").insert(final_data).execute()
                 st.session_state.scanned_data = None
-                st.success(f"✅ {v_type} Bill saved to cloud successfully!")
+                st.success(f"✅ {v_type} Bill saved successfully!")
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 2: 🎙️ VOICE BILLING (THE GAME CHANGER)
+# TAB 2: 🎙️ VOICE BILLING (SALES & PURCHASE)
 # ══════════════════════════════════════════════
 with tab2:
-    st.markdown('<div class="section-title">🎙️ AI Voice Billing <span class="section-badge">MAGIC</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🎙️ AI Voice Billing</div>', unsafe_allow_html=True)
     st.info("💡 Bole: *'Manoj Enterprises ko 10 pipe beche 50 ke rate par'* (Sales) YA *'Sharma se 5 box kharide'* (Purchase)")
     
     audio_value = st.audio_input("Record Sales/Purchase Bill", label_visibility="collapsed")
@@ -577,9 +577,7 @@ with tab2:
 
     if st.session_state.voice_scanned_data is not None:
         v_data = st.session_state.voice_scanned_data
-        st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">✏️ Verify Voice Bill</div>', unsafe_allow_html=True)
-        st.success("✨ AI ne aapki aawaz sun kar yeh bill banaya hai!")
+        st.markdown('<div class="fancy-divider"></div><div class="section-title">✏️ Verify Voice Bill</div>', unsafe_allow_html=True)
         
         with st.form("edit_voice_form"):
             c0, c1, c2 = st.columns([1, 2, 1])
@@ -587,17 +585,14 @@ with tab2:
                 v_type_val = v_data.get("voucher_type", "Sales")
                 v_idx = 1 if "sale" in v_type_val.lower() else 0
                 voice_type = st.selectbox("Type", ["Purchase", "Sales"], index=v_idx)
-            with c1: voice_vendor = st.text_input("Party / Vendor Name", value=v_data.get("vendor_name", "Local Party"))
-            with c2: voice_date = st.text_input("Invoice Date", value="2026-04-08")
+            with c1: voice_vendor = st.text_input("Party Name", value=v_data.get("vendor_name", "Local Party"))
+            with c2: voice_date = st.text_input("Date", value="2026-04-08")
             
             st.markdown("**📦 Items Mentioned in Audio**")
-            raw_voice_items = v_data.get("line_items", [])
-            voice_edited_df = st.data_editor(pd.DataFrame(raw_voice_items), num_rows="dynamic", use_container_width=True)
-            
+            voice_edited_df = st.data_editor(pd.DataFrame(v_data.get("line_items", [])), num_rows="dynamic", use_container_width=True)
             voice_total = st.number_input("Total Amount ₹", value=float(v_data.get("total_amount", 0.0)))
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.form_submit_button("✅ Save Voice Bill to Database", use_container_width=True):
+            if st.form_submit_button("✅ Save Voice Bill", use_container_width=True):
                 voice_final_data = {
                     "voucher_type": voice_type, "vendor_name": voice_vendor, "invoice_date": voice_date,
                     "total_amount": voice_total, "category": "Voice Entry",
@@ -609,7 +604,7 @@ with tab2:
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 3 — ANALYTICS & MANAGE
+# TAB 3 — ANALYTICS, MANAGE & PDF PRINT
 # ══════════════════════════════════════════════
 with tab3:
     total_bills = len(db_data)
@@ -617,40 +612,18 @@ with tab3:
     total_purch = sum([float(x.get("total_amount") or 0) for x in db_data if x.get("voucher_type", "Purchase") == "Purchase"])
 
     m1, m2, m3 = st.columns(3, gap="medium")
-    with m1:
-        st.markdown(f"""
-        <div class="metric-card purple">
-          <span class="metric-icon">📄</span>
-          <div class="metric-label">Total Bills</div>
-          <div class="metric-value purple">{total_bills}</div>
-        </div>""", unsafe_allow_html=True)
-    with m2:
-        st.markdown(f"""
-        <div class="metric-card green">
-          <span class="metric-icon">📈</span>
-          <div class="metric-label">Total Sales</div>
-          <div class="metric-value green">₹{total_sales:,.0f}</div>
-        </div>""", unsafe_allow_html=True)
-    with m3:
-        st.markdown(f"""
-        <div class="metric-card amber">
-          <span class="metric-icon">📉</span>
-          <div class="metric-label">Total Purchase</div>
-          <div class="metric-value amber">₹{total_purch:,.0f}</div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
+    with m1: st.markdown(f'<div class="metric-card purple"><span class="metric-icon">📄</span><div class="metric-label">Total Bills</div><div class="metric-value purple">{total_bills}</div></div>', unsafe_allow_html=True)
+    with m2: st.markdown(f'<div class="metric-card green"><span class="metric-icon">📈</span><div class="metric-label">Total Sales</div><div class="metric-value green">₹{total_sales:,.0f}</div></div>', unsafe_allow_html=True)
+    with m3: st.markdown(f'<div class="metric-card amber"><span class="metric-icon">📉</span><div class="metric-label">Total Purchase</div><div class="metric-value amber">₹{total_purch:,.0f}</div></div>', unsafe_allow_html=True)
 
     if total_bills > 0:
-        st.markdown('<div class="section-title">📋 Voucher Records</div>', unsafe_allow_html=True)
+        st.markdown('<br><div class="section-title">📋 Voucher Records</div>', unsafe_allow_html=True)
         display_df = pd.DataFrame(db_data)
-
         def get_item_names(row):
             items = row.get('line_items')
             if isinstance(items, list) and len(items) > 0: return ", ".join([str(i.get('item_name','')) for i in items if i.get('item_name')])
             elif row.get('product_names'): return str(row.get('product_names'))
             return "No Items"
-
         display_df['Items_Summary'] = display_df.apply(get_item_names, axis=1)
         display_df.insert(0, 'Sr_No', range(1, len(display_df)+1))
         
@@ -658,18 +631,129 @@ with tab3:
         cols = ['Sr_No', 'voucher_type'] + [c for c in display_df.columns if c not in ['Sr_No', 'voucher_type', 'id', 'line_items', 'product_names', 'vendor_address', 'bank_details']]
         
         st.dataframe(display_df[cols], use_container_width=True, hide_index=True)
-
         st.markdown("<br>", unsafe_allow_html=True)
-        with st.expander("🗑️ Danger Zone — Delete a Bill"):
-            bill_options = {
-                f"Sr {idx+1}  | {row.get('voucher_type','Purchase')} |  {row.get('vendor_name','Unknown')}": row['id']
-                for idx, row in enumerate(db_data)
-            }
-            selected_bill = st.selectbox("Select bill to delete:", options=list(bill_options.keys()))
-            if st.button("❌ Delete Selected Bill"):
-                supabase.table("invoices").delete().eq("id", bill_options[selected_bill]).execute()
-                st.success("Bill deleted.")
-                st.rerun()
+
+        # --- VIP B2B PREMIUM PDF GENERATION ---
+        def create_pdf_bill(bill_data):
+            pdf = FPDF(orientation='P', unit='mm', format='A4')
+            pdf.add_page()
+            
+            # Outer Border
+            pdf.rect(5, 5, 200, 287)
+            
+            # Header
+            pdf.set_font("Arial", 'B', 18)
+            v_type = bill_data.get('voucher_type', 'INVOICE').upper()
+            pdf.cell(190, 12, txt=f"TAX {v_type}", ln=True, align='C')
+            pdf.line(5, 17, 205, 17)
+            pdf.ln(5)
+            
+            # Details Split
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(110, 6, txt="Billed To (Party Details):", border=0, ln=0)
+            pdf.cell(80, 6, txt="Invoice Details:", border=0, ln=1)
+            
+            pdf.set_font("Arial", '', 10)
+            x_y_start = pdf.get_y()
+            
+            pdf.multi_cell(100, 5, txt=f"Name: {bill_data.get('vendor_name', 'Unknown')}\nAddress: {bill_data.get('vendor_address', 'N/A')}\nGSTIN: {bill_data.get('gst_number', 'N/A')}")
+            
+            pdf.set_xy(120, x_y_start)
+            pdf.multi_cell(80, 5, txt=f"Invoice No: {bill_data.get('invoice_number', 'N/A')}\nDate: {bill_data.get('invoice_date', 'N/A')}\nCategory: {bill_data.get('category', 'General')}")
+            
+            pdf.ln(8)
+            pdf.line(5, pdf.get_y(), 205, pdf.get_y())
+            pdf.ln(2)
+            
+            # Table Header
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(15, 8, "S.No", 1, 0, 'C')
+            pdf.cell(85, 8, "Description of Goods", 1, 0, 'C')
+            pdf.cell(25, 8, "Qty", 1, 0, 'C')
+            pdf.cell(30, 8, "Rate", 1, 0, 'C')
+            pdf.cell(35, 8, "Amount", 1, 1, 'C')
+            
+            # Table Body
+            pdf.set_font("Arial", '', 10)
+            line_items = bill_data.get('line_items', [])
+            base_total = 0
+            if isinstance(line_items, list):
+                for idx, item in enumerate(line_items):
+                    i_name = str(item.get('item_name', ''))[:42]
+                    qty_str = f"{item.get('quantity', 0)} {item.get('unit', '')}"
+                    rate = float(item.get('rate', 0))
+                    amt = float(item.get('amount', 0))
+                    base_total += amt
+                    
+                    pdf.cell(15, 8, str(idx+1), 'LR', 0, 'C')
+                    pdf.cell(85, 8, i_name, 'LR', 0, 'L')
+                    pdf.cell(25, 8, qty_str, 'LR', 0, 'C')
+                    pdf.cell(30, 8, f"{rate:,.2f}", 'LR', 0, 'R')
+                    pdf.cell(35, 8, f"{amt:,.2f}", 'LR', 1, 'R')
+            
+            pdf.cell(190, 0, "", 'T', 1) # Close table bottom
+            
+            # Totals Section
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(155, 8, "Taxable Amount", 1, 0, 'R')
+            pdf.cell(35, 8, f"{bill_data.get('base_price', base_total):,.2f}", 1, 1, 'R')
+            
+            cgst, sgst, igst = float(bill_data.get('cgst_amount', 0)), float(bill_data.get('sgst_amount', 0)), float(bill_data.get('igst_amount', 0))
+            if cgst > 0:
+                pdf.cell(155, 8, "Add: CGST", 1, 0, 'R')
+                pdf.cell(35, 8, f"{cgst:,.2f}", 1, 1, 'R')
+            if sgst > 0:
+                pdf.cell(155, 8, "Add: SGST", 1, 0, 'R')
+                pdf.cell(35, 8, f"{sgst:,.2f}", 1, 1, 'R')
+            if igst > 0:
+                pdf.cell(155, 8, "Add: IGST", 1, 0, 'R')
+                pdf.cell(35, 8, f"{igst:,.2f}", 1, 1, 'R')
+                
+            total_amt = float(bill_data.get('total_amount', 0))
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(155, 10, "Grand Total (Rs.)", 1, 0, 'R')
+            pdf.cell(35, 10, f"{total_amt:,.2f}", 1, 1, 'R')
+            
+            pdf.ln(8)
+            
+            # Footer
+            pdf.set_font("Arial", 'B', 10)
+            pdf.cell(100, 6, "Bank Details:", 0, 1)
+            pdf.set_font("Arial", '', 10)
+            pdf.multi_cell(100, 5, txt=f"{bill_data.get('bank_details', 'N/A')}\n\nTerms: E.& O.E.\n1. Goods once sold will not be taken back.")
+            
+            pdf.set_xy(130, pdf.get_y() - 15)
+            pdf.cell(60, 6, "For Authorized Signatory", 0, 1, 'C')
+            pdf.line(140, pdf.get_y()+8, 190, pdf.get_y()+8)
+            
+            pdf_out = pdf.output(dest='S')
+            return pdf_out.encode('latin-1') if isinstance(pdf_out, str) else pdf_out
+
+        col_print, col_delete = st.columns(2, gap="large")
+        
+        with col_print:
+            with st.expander("🖨️ Print / Download PDF Bill"):
+                pdf_options = {f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')}": row for idx, row in enumerate(db_data)}
+                selected_pdf_key = st.selectbox("Select bill to Print:", options=list(pdf_options.keys()), key="pdf_select")
+                
+                if selected_pdf_key:
+                    selected_row_data = pdf_options[selected_pdf_key]
+                    pdf_bytes = create_pdf_bill(selected_row_data)
+                    st.download_button(
+                        label="📥 Download PDF Invoice",
+                        data=pdf_bytes,
+                        file_name=f"Invoice_{selected_row_data.get('vendor_name', 'Bill')}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+
+        with col_delete:
+            with st.expander("🗑️ Danger Zone — Delete a Bill"):
+                bill_options = {f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')}": row['id'] for idx, row in enumerate(db_data)}
+                selected_bill = st.selectbox("Select bill to delete:", options=list(bill_options.keys()))
+                if st.button("❌ Delete Selected Bill", use_container_width=True):
+                    supabase.table("invoices").delete().eq("id", bill_options[selected_bill]).execute()
+                    st.rerun()
     else:
         st.info("No bills scanned yet. Upload your first invoice from the Scan tab!")
 
@@ -687,15 +771,14 @@ with tab4:
             if p_name not in parties_data:
                 parties_data[p_name] = {
                     'group': 'Sundry Debtors' if inv.get('voucher_type') == 'Sales' else 'Sundry Creditors',
-                    'gst':     str(inv.get('gst_number') or '').replace("&","&amp;"),
+                    'gst': str(inv.get('gst_number') or '').replace("&","&amp;"),
                     'address': str(inv.get('vendor_address') or '').replace("&","&amp;")
                 }
             line_items = inv.get('line_items') or []
             if isinstance(line_items, list):
                 for itm in line_items:
                     item_name = str(itm.get('item_name','')).replace("&","&amp;")
-                    unit = str(itm.get('unit','Nos')).replace("&","&amp;")
-                    if item_name: unique_items.add((item_name, unit))
+                    if item_name: unique_items.add((item_name, str(itm.get('unit','Nos')).replace("&","&amp;")))
 
         for party, details in parties_data.items():
             xml_data += f'<TALLYMESSAGE xmlns:UDF="TallyUDF">\n<LEDGER ACTION="Create">\n<NAME>{party}</NAME>\n<PARENT>{details["group"]}</PARENT>\n'
@@ -708,7 +791,7 @@ with tab4:
 
         for inv in invoices_data:
             raw_date = str(inv.get("invoice_date") or "2026-03-27").replace("-","")
-            v_name   = str(inv.get('vendor_name') or 'Unknown').replace("&","&amp;")
+            v_name = str(inv.get('vendor_name') or 'Unknown').replace("&","&amp;")
             v_inv_no = str(inv.get('invoice_number') or 'Not Found').replace("&","&amp;")
             v_type = inv.get('voucher_type') or 'Purchase'
             
@@ -748,46 +831,10 @@ with tab4:
         return xml_data
 
     ec1, ec2, ec3 = st.columns(3, gap="medium")
-    with ec1:
-        st.markdown("""
-        <div class="metric-card purple center">
-          <span class="metric-icon">🏦</span>
-          <div class="metric-label">Format</div>
-          <div style="color:#A89EFF;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Tally ERP 9</div>
-        </div>""", unsafe_allow_html=True)
-    with ec2:
-        st.markdown(f"""
-        <div class="metric-card green center">
-          <span class="metric-icon">📦</span>
-          <div class="metric-label">Vouchers Ready</div>
-          <div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">{len(db_data)} Bills</div>
-        </div>""", unsafe_allow_html=True)
-    with ec3:
-        st.markdown("""
-        <div class="metric-card amber center">
-          <span class="metric-icon">⚡</span>
-          <div class="metric-label">Voucher Type</div>
-          <div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Sales/Purchase</div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
+    with ec1: st.markdown("""<div class="metric-card purple center"><span class="metric-icon">🏦</span><div class="metric-label">Format</div><div style="color:#A89EFF;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Tally ERP 9</div></div>""", unsafe_allow_html=True)
+    with ec2: st.markdown(f"""<div class="metric-card green center"><span class="metric-icon">📦</span><div class="metric-label">Vouchers Ready</div><div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">{len(db_data)} Bills</div></div>""", unsafe_allow_html=True)
+    with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Multi-Voucher</div></div>""", unsafe_allow_html=True)
 
     if len(db_data) > 0:
-        st.markdown("""
-        <div class="export-card">
-          <span class="export-icon">📥</span>
-          <div class="export-title">Download Master Tally XML</div>
-          <div class="export-desc">Auto-creates Sundry Debtors for Sales & Creditors for Purchases!</div>
-        </div><br>""", unsafe_allow_html=True)
-
-        col_dl, col_empty = st.columns([1, 2])
-        with col_dl:
-            st.download_button(
-                label="📥 Download KhataAI_ERP_Import.xml",
-                data=generate_tally_xml(db_data),
-                file_name="KhataAI_ERP_Import.xml",
-                mime="application/xml",
-                use_container_width=True
-            )
-    else:
-        st.info("No bills scanned yet. Upload your first invoice from the Scan tab!")
+        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download Master Tally XML</div><div class="export-desc">Auto-creates Sundry Debtors for Sales & Creditors for Purchases!</div></div><br>""", unsafe_allow_html=True)
+        st.download_button(label="📥 Download KhataAI_ERP_Import.xml", data=generate_tally_xml(db_data), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
