@@ -27,9 +27,7 @@ st.markdown("""
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 html, body, .stApp { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; }
 
-#MainMenu, footer, header, .stDeployButton { visibility: hidden !important; }
-.block-container { padding: 0 2.5rem 4rem !important; max-width: 1300px !important; }
-
+/* ── MESH BACKGROUND ── */
 .bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
 .bg-mesh span { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.55; }
 .bg-mesh span:nth-child(1) { width: 700px; height: 700px; top: -200px; left: -180px; background: radial-gradient(circle, rgba(124,111,255,0.22) 0%, transparent 65%); animation: meshDrift1 18s ease-in-out infinite alternate; }
@@ -37,67 +35,76 @@ html, body, .stApp { background-color: var(--bg) !important; color: var(--text) 
 @keyframes meshDrift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(60px,40px) scale(1.12); } }
 @keyframes meshDrift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-40px,-30px) scale(1.08); } }
 
-.khata-topbar { display: flex; align-items: center; justify-content: space-between; padding: 2rem 0 1.2rem; position: relative; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+/* ── HERO HEADER & LOGO ── */
+.khata-topbar { display: flex; align-items: center; justify-content: space-between; padding: 2rem 0 1.2rem; position: relative; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 2rem; animation: fadeSlideDown 0.7s cubic-bezier(.22,.68,0,1.2) both; }
+@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
 .khata-brand { display: flex; align-items: center; gap: 1rem; }
-.khata-logo { width: 46px; height: 46px; background: linear-gradient(135deg, #7C6FFF 0%, #00D68F 100%); border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 0 0 1px rgba(124,111,255,0.4), 0 0 28px rgba(124,111,255,0.35); }
+.khata-logo { width: 46px; height: 46px; background: linear-gradient(135deg, #7C6FFF 0%, #00D68F 100%); border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 0 0 1px rgba(124,111,255,0.4), 0 0 28px rgba(124,111,255,0.35); animation: logoPulse 3s ease-in-out infinite; }
+@keyframes logoPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(124,111,255,0.4), 0 0 28px rgba(124,111,255,0.35); } 50% { box-shadow: 0 0 0 1px rgba(124,111,255,0.6), 0 0 44px rgba(124,111,255,0.55); } }
 .khata-title { font-family: 'Syne', sans-serif !important; font-size: 1.75rem !important; font-weight: 800 !important; background: linear-gradient(120deg, #FFFFFF 20%, #7C6FFF 60%, #00D68F 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .khata-sub { font-size: 0.78rem; color: var(--muted); font-weight: 400; margin-top: 3px; }
 .khata-pill { background: var(--purple-dim); border: 1px solid var(--purple-border); color: #A89EFF; font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
 
+/* ── TABS ── */
 .stTabs [data-baseweb="tab-list"] { gap: 6px !important; background: rgba(255,255,255,0.03) !important; border-radius: 14px !important; padding: 5px !important; border: 1px solid var(--border) !important; position: relative; z-index: 5; }
-.stTabs [data-baseweb="tab"] { background: transparent !important; border-radius: 10px !important; color: var(--muted) !important; font-weight: 500 !important; padding: 8px 22px !important; border: none !important; }
+.stTabs [data-baseweb="tab"] { background: transparent !important; border-radius: 10px !important; color: var(--muted) !important; font-weight: 500 !important; padding: 8px 22px !important; border: none !important; transition: all 0.2s ease !important; }
 .stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(124,111,255,0.2), rgba(0,214,143,0.1)) !important; color: #C4BEFF !important; font-weight: 600 !important; }
 
-.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1.6rem; position: relative; overflow: hidden; }
-.metric-card.purple::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, #7C6FFF, #A89EFF); }
-.metric-card.green::before  { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, #00D68F, #6EE7B7); }
-.metric-card.amber::before  { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, #FFB547, #FCD34D); }
-.metric-card.center { text-align: center; }
-
+/* ── METRIC CARDS ── */
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1.6rem; position: relative; overflow: hidden; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; animation: cardReveal 0.6s cubic-bezier(.22,.68,0,1.2) both; }
+.metric-card:hover { transform: translateY(-3px); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+.metric-card.purple:hover { border-color: rgba(124,111,255,0.35); box-shadow: 0 16px 48px rgba(124,111,255,0.15); }
+.metric-card.green:hover  { border-color: rgba(0,214,143,0.35);  box-shadow: 0 16px 48px rgba(0,214,143,0.12); }
+.metric-card.amber:hover  { border-color: rgba(255,181,71,0.35);  box-shadow: 0 16px 48px rgba(255,181,71,0.12); }
+@keyframes cardReveal { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: opacity 0.25s ease; }
+.metric-card.purple::before { background: linear-gradient(90deg, #7C6FFF, #A89EFF); }
+.metric-card.green::before  { background: linear-gradient(90deg, #00D68F, #6EE7B7); }
+.metric-card.amber::before  { background: linear-gradient(90deg, #FFB547, #FCD34D); }
 .metric-icon { font-size: 1.6rem; margin-bottom: 0.75rem; display: block; }
 .metric-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; font-weight: 500; margin-bottom: 0.35rem; }
 .metric-value { font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 700; color: #FFFFFF; }
 .metric-value.purple { color: #A89EFF; } .metric-value.green  { color: #6EE7B7; } .metric-value.amber  { color: #FCD34D; }
 
-.section-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-.section-badge { background: var(--purple-dim); color: #A89EFF; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--purple-border); }
+/* ── INPUTS & BUTTONS ── */
+.stFileUploader > div, div[data-testid="stAudioInput"] > div { background: rgba(124,111,255,0.04) !important; border: 2px dashed rgba(124,111,255,0.25) !important; border-radius: var(--radius) !important; transition: border-color 0.3s, background 0.3s !important; }
+.stFileUploader > div:hover, div[data-testid="stAudioInput"] > div:hover { border-color: rgba(124,111,255,0.5) !important; background: rgba(124,111,255,0.07) !important; }
+.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stNumberInput > div > div > input, .stSelectbox > div > div, .stMultiSelect > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; color: var(--text) !important; transition: border-color 0.2s !important; }
+.stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus { border-color: rgba(124,111,255,0.5) !important; box-shadow: 0 0 0 3px rgba(124,111,255,0.1) !important; }
 
-.stFileUploader > div, div[data-testid="stAudioInput"] > div { background: rgba(124,111,255,0.04) !important; border: 2px dashed rgba(124,111,255,0.25) !important; border-radius: var(--radius) !important; }
-.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stNumberInput > div > div > input, .stSelectbox > div > div, .stMultiSelect > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; color: var(--text) !important; }
+div.stButton > button { background: linear-gradient(135deg, #7C6FFF, #5B4FE8) !important; color: white !important; border: none !important; border-radius: 11px !important; padding: 11px 24px !important; font-weight: 600 !important; width: 100%; box-shadow: 0 4px 20px rgba(124,111,255,0.3) !important; transition: all 0.2s ease !important; }
+div.stButton > button:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 32px rgba(124,111,255,0.45) !important; }
+div.stDownloadButton > button { background: linear-gradient(135deg, #00D68F, #00A86B) !important; color: white !important; width: 100%; border-radius: 11px !important; padding: 13px 28px !important; font-weight: 600 !important; box-shadow: 0 4px 24px rgba(0,214,143,0.3) !important; }
+div.stDownloadButton > button:hover { transform: translateY(-2px) !important; box-shadow: 0 10px 36px rgba(0,214,143,0.45) !important; }
+div.stButton > button:has(span:contains("Delete")), div.stButton > button:has(span:contains("Logout")) { background: rgba(239,68,68,0.12) !important; color: #FCA5A5 !important; border: 1px solid rgba(239,68,68,0.25) !important; box-shadow: none !important; }
 
-div.stButton > button { background: linear-gradient(135deg, #7C6FFF, #5B4FE8) !important; color: white !important; border: none !important; border-radius: 11px !important; padding: 11px 24px !important; font-weight: 600 !important; width: 100%; box-shadow: 0 4px 20px rgba(124,111,255,0.3) !important; }
-div.stDownloadButton > button { background: linear-gradient(135deg, #00D68F, #00A86B) !important; color: white !important; width: 100%; border-radius: 11px !important; padding: 13px 28px !important; font-weight: 600 !important; }
-div.stButton > button:has(span:contains("Delete")) { background: rgba(239,68,68,0.12) !important; color: #FCA5A5 !important; border: 1px solid rgba(239,68,68,0.25) !important; box-shadow: none !important; }
-
+/* ── EXPORT CARD & EXTRAS ── */
 .export-card { background: linear-gradient(135deg, rgba(0,214,143,0.06), rgba(124,111,255,0.06)); border: 1px solid rgba(0,214,143,0.18); border-radius: 20px; padding: 2.5rem; text-align: center; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 .fancy-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 2rem 0; }
-.stDataFrame, [data-testid="stDataFrame"] { border-radius: 12px !important; border: 1px solid var(--border) !important; }
-div[data-testid="stAlert"] { background: rgba(124,111,255,0.08) !important; border: 1px solid var(--purple-border) !important; border-radius: 12px !important; color: var(--text) !important; }
-.step-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+.stDataFrame { border-radius: 12px !important; border: 1px solid var(--border) !important; }
+.step-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; animation: fadeSlideDown 0.5s ease both; }
 .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--purple-dim); border: 1px solid var(--purple-border); color: #A89EFF; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .step-label { font-size: 0.85rem; font-weight: 500; color: var(--text); }
 .preview-frame { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.02); }
 
 /* Custom Login Card */
-.login-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(124,111,255,0.2); border-radius: 20px; padding: 3rem 2rem; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+.login-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(124,111,255,0.2); border-radius: 20px; padding: 3rem 2rem; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px); animation: cardReveal 0.5s ease both; }
 </style>
 <div class="bg-mesh"><span></span><span></span><span></span></div>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# 2. LOGIN & AUTHENTICATION SYSTEM 🔒
+# 2. STATE MANAGEMENT (LOGIN & PROFILE SETTINGS)
 # ─────────────────────────────────────────────
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-# Yahan tu apna man-pasand ID Password daal sakta hai
-ADMIN_USERNAME = "aryan"
-ADMIN_PASSWORD = "admin123"
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "admin_user" not in st.session_state: st.session_state.admin_user = "aryan"
+if "admin_pass" not in st.session_state: st.session_state.admin_pass = "admin123"
+if "company_name" not in st.session_state: st.session_state.company_name = "Stepout Studios"
 
 if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.2, 1])
-    
     with c2:
         st.markdown("""
         <div class="login-box">
@@ -105,30 +112,45 @@ if not st.session_state.logged_in:
             <div class="khata-title" style="font-size: 2.2rem !important; margin-bottom: 0.5rem;">Admin Login</div>
             <div class="khata-sub" style="margin-bottom: 2rem;">Authorized Personnel Only</div>
         """, unsafe_allow_html=True)
-        
         with st.form("login_form"):
             entered_user = st.text_input("Username", placeholder="Enter your Admin ID")
             entered_pass = st.text_input("Password", type="password", placeholder="Enter your Password")
-            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("🔓 Secure Login", use_container_width=True):
-                if entered_user == ADMIN_USERNAME and entered_pass == ADMIN_PASSWORD:
+                if entered_user == st.session_state.admin_user and entered_pass == st.session_state.admin_pass:
                     st.session_state.logged_in = True
                     st.rerun()
                 else:
                     st.error("❌ Incorrect Username or Password!")
-        
         st.markdown("</div>", unsafe_allow_html=True)
-        
-    st.stop() # Yeh line baaki poore app ko rukne ko bolti hai jab tak login na ho
-
-# Agar yahan tak code aaya, matlab banda logged in hai! Welcome to the App! 🎉
-if st.sidebar.button("🚪 Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
+    st.stop() 
 
 # ─────────────────────────────────────────────
-# 3. CLIENT SETUP
+# 3. SIDEBAR (THE 3-LINE MENU) & PROFILE SETTINGS
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.markdown(f"<h2 style='color: white; font-family: Syne, sans-serif;'>🏢 {st.session_state.company_name}</h2>", unsafe_allow_html=True)
+    st.markdown("<div style='color: #A89EFF; font-size: 0.8rem; margin-bottom: 2rem;'>Admin Dashboard</div>", unsafe_allow_html=True)
+    
+    with st.expander("⚙️ Profile & Security Settings", expanded=False):
+        with st.form("settings_form"):
+            new_comp = st.text_input("Company Name", value=st.session_state.company_name)
+            new_user = st.text_input("Admin Username", value=st.session_state.admin_user)
+            new_pass = st.text_input("New Password", type="password", value=st.session_state.admin_pass)
+            if st.form_submit_button("💾 Save Changes", use_container_width=True):
+                st.session_state.company_name = new_comp
+                st.session_state.admin_user = new_user
+                st.session_state.admin_pass = new_pass
+                st.success("Settings Updated Successfully!")
+                st.rerun()
+                
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🚪 Logout Account", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
+
+# ─────────────────────────────────────────────
+# 4. CLIENT SETUP
 # ─────────────────────────────────────────────
 AI_API_KEY   = st.secrets["AI_API_KEY"]
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -147,18 +169,18 @@ except Exception:
     db_data = []
 
 # ─────────────────────────────────────────────
-# 4. HERO HEADER
+# 5. DYNAMIC HERO HEADER
 # ─────────────────────────────────────────────
 st.markdown(f"""
 <div class="khata-topbar">
   <div class="khata-brand">
     <div class="khata-logo">⚡</div>
     <div>
-      <div class="khata-title">KhataAI</div>
+      <div class="khata-title">{st.session_state.company_name}</div>
       <div class="khata-sub">Smart CA Assistant — GST · Voice · Tally</div>
     </div>
   </div>
-  <div class="khata-pill">v4.0 ERP PRO</div>
+  <div class="khata-pill">v5.0 ERP PRO</div>
 </div>
 """, unsafe_allow_html=True)
 
