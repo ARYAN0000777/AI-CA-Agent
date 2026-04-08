@@ -1156,27 +1156,41 @@ with tab2:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Transcribe & Generate", use_container_width=True):
             with st.spinner("Running acoustic models and intent recognition..."):
-                try:
-                    audio_prompt = """
-                    Listen to this audio. You are an expert Accountant.
-                    Determine if the user is BUYING (Purchase) or SELLING (Sales).
-                    Extract the party name, items, quantities and rates. Calculate amounts automatically.
-                    Return ONLY a valid JSON:
-                    {
-                      "voucher_type": "Purchase", 
-                      "vendor_name": "...", "base_price": 0.0, "total_amount": 0.0,
-                      "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
-                    }
-                    """
-                    resp = ai_client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
-                    )
-                    clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
-                    st.session_state.voice_scanned_data = json.loads(clean_json)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Audio processing error: {e}")
+                import time # Isko code me sabse upar import list me daal dena agar nahi hai toh
+                
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        audio_prompt = """
+                        Listen to this audio. You are an expert Accountant.
+                        Determine if the user is BUYING (Purchase) or SELLING (Sales).
+                        Extract the party name, items, quantities and rates. Calculate amounts automatically.
+                        Return ONLY a valid JSON:
+                        {
+                          "voucher_type": "Purchase", 
+                          "vendor_name": "...", "base_price": 0.0, "total_amount": 0.0,
+                          "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
+                        }
+                        """
+                        resp = ai_client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
+                        )
+                        clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
+                        st.session_state.voice_scanned_data = json.loads(clean_json)
+                        st.rerun()
+                        break # Agar successfully chal gaya toh loop se bahar aa jao
+                        
+                    except Exception as e:
+                        if "503" in str(e) or "high demand" in str(e).lower():
+                            if attempt < max_retries - 1:
+                                st.warning(f"⏳ Server is busy. Auto-retrying in a few seconds... (Attempt {attempt + 1}/{max_retries})")
+                                time.sleep(2) # 2 second wait karke dobara try karega
+                            else:
+                                st.error("❌ Servers are currently overloaded. Please try again after a minute.")
+                        else:
+                            st.error(f"❌ Audio processing error: {e}")
+                            break
 
     if st.session_state.voice_scanned_data is not None:
         v_data = st.session_state.voice_scanned_data
