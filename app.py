@@ -81,7 +81,7 @@ html, body, .stApp {
   max-width: 1280px !important;
 }
 
-#MainMenu, footer, header, .stDeployButton { visibility: hidden !important; }
+#MainMenu, footer, .stDeployButton { visibility: hidden !important; }
 
 /* ══════════════════════════════════════════
    ANIMATED MESH BACKGROUND
