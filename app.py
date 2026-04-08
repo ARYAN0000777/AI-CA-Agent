@@ -6,11 +6,13 @@ from google.genai import types
 from PIL import Image
 from supabase import create_client, Client
 from fpdf import FPDF
+import base64
 
 # ─────────────────────────────────────────────
 # 1. PAGE CONFIG & ULTRA-PREMIUM CLAUDE UI/UX
 # ─────────────────────────────────────────────
-st.set_page_config(page_title="KhataAI Pro", page_icon="⚡", layout="wide", initial_sidebar_state="collapsed")
+# YAHAN MAIN SIDEBAR KO BY DEFAULT OPEN KAR DIYA HAI (initial_sidebar_state="expanded")
+st.set_page_config(page_title="KhataAI Pro", page_icon="⚡", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
@@ -946,6 +948,7 @@ if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "admin_user" not in st.session_state: st.session_state.admin_user = "aryan"
 if "admin_pass" not in st.session_state: st.session_state.admin_pass = "admin123"
 if "company_name" not in st.session_state: st.session_state.company_name = "Stepout Studios"
+if "company_logo" not in st.session_state: st.session_state.company_logo = None # NEW: Logo state
 
 if not st.session_state.logged_in:
     c1, c2, c3 = st.columns([1, 1.2, 1])
@@ -973,16 +976,27 @@ if not st.session_state.logged_in:
 # 3. SIDEBAR (THE 3-LINE MENU) & PROFILE SETTINGS
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(f"<div style='text-align: center; margin-top: 1rem;'><div class='khata-logo' style='margin: 0 auto 1rem auto; width: 60px; height: 60px; font-size: 2rem;'>🏢</div><h2 style='color: white; font-family: Syne, sans-serif; font-size: 1.5rem; font-weight:800; margin-bottom:0;'>{st.session_state.company_name}</h2><div style='color: #A89EFF; font-size: 0.8rem; letter-spacing:1px; margin-bottom: 2.5rem; text-transform:uppercase; font-weight:600;'>Master Admin Dashboard</div></div>", unsafe_allow_html=True)
+    # Yahan check ho raha hai ki user ne apni logo daali hai ya nahi
+    if st.session_state.company_logo:
+        logo_display = f"<img src='{st.session_state.company_logo}' style='width: 80px; height: 80px; border-radius: 20px; object-fit: cover; box-shadow: 0 0 25px rgba(124,111,255,0.4); border: 2px solid rgba(124,111,255,0.3); margin-bottom: 1rem;'>"
+    else:
+        logo_display = "<div class='khata-logo' style='margin: 0 auto 1rem auto; width: 60px; height: 60px; font-size: 2rem;'>🏢</div>"
+
+    st.markdown(f"<div style='text-align: center; margin-top: 1rem;'>{logo_display}<h2 style='color: white; font-family: Syne, sans-serif; font-size: 1.5rem; font-weight:800; margin-bottom:0;'>{st.session_state.company_name}</h2><div style='color: #A89EFF; font-size: 0.8rem; letter-spacing:1px; margin-bottom: 2.5rem; text-transform:uppercase; font-weight:600;'>Master Admin Dashboard</div></div>", unsafe_allow_html=True)
     
     with st.expander("⚙️ System Preferences", expanded=False):
         with st.form("settings_form"):
             st.markdown("**Update Profile Details**")
+            new_logo = st.file_uploader("Upload Company Logo (Optional)", type=['png', 'jpg', 'jpeg'])
             new_comp = st.text_input("Workspace Name", value=st.session_state.company_name)
             new_user = st.text_input("Admin ID", value=st.session_state.admin_user)
             new_pass = st.text_input("New Password", type="password", value=st.session_state.admin_pass)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("💾 Save Configuration", use_container_width=True):
+                # Save the new image in Base64 format so it fits in the HTML beautifully
+                if new_logo is not None:
+                    base64_image = base64.b64encode(new_logo.getvalue()).decode("utf-8")
+                    st.session_state.company_logo = f"data:image/png;base64,{base64_image}"
                 st.session_state.company_name = new_comp
                 st.session_state.admin_user = new_user
                 st.session_state.admin_pass = new_pass
