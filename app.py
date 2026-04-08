@@ -152,7 +152,7 @@ html, body, .stApp {
   box-shadow: inset 0 0 0 1px rgba(124,111,255,0.3) !important;
 }
 
-/* ── METRIC CARDS (WITH HOVER RESTORED) ── */
+/* ── METRIC CARDS ── */
 .metric-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -242,7 +242,8 @@ html, body, .stApp {
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stNumberInput > div > div > input,
-.stSelectbox > div > div {
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
   background: rgba(255,255,255,0.04) !important;
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
@@ -252,12 +253,13 @@ html, body, .stApp {
 }
 .stTextInput > div > div > input:focus,
 .stTextArea > div > div > textarea:focus,
-.stNumberInput > div > div > input:focus {
+.stNumberInput > div > div > input:focus,
+.stMultiSelect > div > div:focus-within {
   border-color: rgba(124,111,255,0.5) !important;
   box-shadow: 0 0 0 3px rgba(124,111,255,0.1) !important;
 }
 
-/* ── BUTTONS (WITH HOVER RESTORED) ── */
+/* ── BUTTONS ── */
 div.stButton > button {
   background: linear-gradient(135deg, #7C6FFF, #5B4FE8) !important;
   color: white !important;
@@ -633,29 +635,23 @@ with tab3:
         st.dataframe(display_df[cols], use_container_width=True, hide_index=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- VIP B2B PREMIUM PDF GENERATION ---
         def create_pdf_bill(bill_data):
             pdf = FPDF(orientation='P', unit='mm', format='A4')
             pdf.add_page()
-            
-            # Outer Border
             pdf.rect(5, 5, 200, 287)
             
-            # Header
             pdf.set_font("Arial", 'B', 18)
             v_type = bill_data.get('voucher_type', 'INVOICE').upper()
             pdf.cell(190, 12, txt=f"TAX {v_type}", ln=True, align='C')
             pdf.line(5, 17, 205, 17)
             pdf.ln(5)
             
-            # Details Split
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(110, 6, txt="Billed To (Party Details):", border=0, ln=0)
             pdf.cell(80, 6, txt="Invoice Details:", border=0, ln=1)
             
             pdf.set_font("Arial", '', 10)
             x_y_start = pdf.get_y()
-            
             pdf.multi_cell(100, 5, txt=f"Name: {bill_data.get('vendor_name', 'Unknown')}\nAddress: {bill_data.get('vendor_address', 'N/A')}\nGSTIN: {bill_data.get('gst_number', 'N/A')}")
             
             pdf.set_xy(120, x_y_start)
@@ -665,7 +661,6 @@ with tab3:
             pdf.line(5, pdf.get_y(), 205, pdf.get_y())
             pdf.ln(2)
             
-            # Table Header
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(15, 8, "S.No", 1, 0, 'C')
             pdf.cell(85, 8, "Description of Goods", 1, 0, 'C')
@@ -673,7 +668,6 @@ with tab3:
             pdf.cell(30, 8, "Rate", 1, 0, 'C')
             pdf.cell(35, 8, "Amount", 1, 1, 'C')
             
-            # Table Body
             pdf.set_font("Arial", '', 10)
             line_items = bill_data.get('line_items', [])
             base_total = 0
@@ -691,12 +685,10 @@ with tab3:
                     pdf.cell(30, 8, f"{rate:,.2f}", 'LR', 0, 'R')
                     pdf.cell(35, 8, f"{amt:,.2f}", 'LR', 1, 'R')
             
-            pdf.cell(190, 0, "", 'T', 1) # Close table bottom
+            pdf.cell(190, 0, "", 'T', 1)
             
-            # Totals Section
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(155, 8, "Taxable Amount", 1, 0, 'R')
-            
             base_val = float(bill_data.get('base_price') or base_total)
             pdf.cell(35, 8, f"{base_val:,.2f}", 1, 1, 'R')
             
@@ -720,8 +712,6 @@ with tab3:
             pdf.cell(35, 10, f"{total_amt:,.2f}", 1, 1, 'R')
             
             pdf.ln(8)
-            
-            # Footer
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 6, "Bank Details:", 0, 1)
             pdf.set_font("Arial", '', 10)
@@ -735,22 +725,14 @@ with tab3:
             return pdf_out.encode('latin-1') if isinstance(pdf_out, str) else pdf_out
 
         col_print, col_delete = st.columns(2, gap="large")
-        
         with col_print:
             with st.expander("🖨️ Print / Download PDF Bill"):
                 pdf_options = {f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')}": row for idx, row in enumerate(db_data)}
                 selected_pdf_key = st.selectbox("Select bill to Print:", options=list(pdf_options.keys()), key="pdf_select")
-                
                 if selected_pdf_key:
                     selected_row_data = pdf_options[selected_pdf_key]
                     pdf_bytes = create_pdf_bill(selected_row_data)
-                    st.download_button(
-                        label="📥 Download PDF Invoice",
-                        data=pdf_bytes,
-                        file_name=f"Invoice_{selected_row_data.get('vendor_name', 'Bill')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
+                    st.download_button(label="📥 Download PDF Invoice", data=pdf_bytes, file_name=f"Invoice_{selected_row_data.get('vendor_name', 'Bill')}.pdf", mime="application/pdf", use_container_width=True)
 
         with col_delete:
             with st.expander("🗑️ Danger Zone — Delete a Bill"):
@@ -763,9 +745,28 @@ with tab3:
         st.info("No bills scanned yet. Upload your first invoice from the Scan tab!")
 
 # ══════════════════════════════════════════════
-# TAB 4 — TALLY EXPORT
+# TAB 4 — TALLY EXPORT (WITH SELECTION FEATURE)
 # ══════════════════════════════════════════════
 with tab4:
+    st.markdown('<div class="section-title">⚙️ Configure Tally Export</div>', unsafe_allow_html=True)
+    
+    if len(db_data) > 0:
+        export_mode = st.radio("Select Export Mode:", ["📤 Export All Bills", "✅ Select Specific Bills"], horizontal=True)
+        
+        selected_invoices = db_data # Default
+        
+        if export_mode == "✅ Select Specific Bills":
+            bill_options = {
+                f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')} | ₹{row.get('total_amount',0)}": row 
+                for idx, row in enumerate(db_data)
+            }
+            selected_keys = st.multiselect("Select bills to export to Tally:", options=list(bill_options.keys()), default=list(bill_options.keys()))
+            selected_invoices = [bill_options[k] for k in selected_keys]
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        selected_invoices = []
+
     def generate_tally_xml(invoices_data):
         xml_data = "<ENVELOPE>\n<HEADER>\n<TALLYREQUEST>Import Data</TALLYREQUEST>\n</HEADER>\n<BODY>\n<IMPORTDATA>\n<REQUESTDESC>\n<REPORTNAME>All Masters</REPORTNAME>\n</REQUESTDESC>\n<REQUESTDATA>\n"
         parties_data = {}
@@ -837,9 +838,13 @@ with tab4:
 
     ec1, ec2, ec3 = st.columns(3, gap="medium")
     with ec1: st.markdown("""<div class="metric-card purple center"><span class="metric-icon">🏦</span><div class="metric-label">Format</div><div style="color:#A89EFF;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Tally ERP 9</div></div>""", unsafe_allow_html=True)
-    with ec2: st.markdown(f"""<div class="metric-card green center"><span class="metric-icon">📦</span><div class="metric-label">Vouchers Ready</div><div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">{len(db_data)} Bills</div></div>""", unsafe_allow_html=True)
-    with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Multi-Voucher</div></div>""", unsafe_allow_html=True)
+    with ec2: st.markdown(f"""<div class="metric-card green center"><span class="metric-icon">📦</span><div class="metric-label">Vouchers Ready</div><div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">{len(selected_invoices)} Bills</div></div>""", unsafe_allow_html=True)
+    with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;">Ready for Export</div></div>""", unsafe_allow_html=True)
 
-    if len(db_data) > 0:
-        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download Master Tally XML</div><div class="export-desc">Auto-creates Sundry Debtors for Sales & Creditors for Purchases!</div></div><br>""", unsafe_allow_html=True)
-        st.download_button(label="📥 Download KhataAI_ERP_Import.xml", data=generate_tally_xml(db_data), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
+    if len(selected_invoices) > 0:
+        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download Master Tally XML</div><div class="export-desc">Your selected bills are packaged into a Tally-compatible XML.</div></div><br>""", unsafe_allow_html=True)
+        st.download_button(label="📥 Download KhataAI_ERP_Import.xml", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
+    elif len(db_data) > 0 and len(selected_invoices) == 0:
+        st.warning("⚠️ Please select at least one bill to export.")
+    else:
+        st.info("No bills scanned yet. Upload your first invoice from the Scan tab!")
