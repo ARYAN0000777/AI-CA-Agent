@@ -973,8 +973,10 @@ if not st.session_state.logged_in:
 # 3. SIDEBAR (THE 3-LINE MENU) & PROFILE SETTINGS
 # ─────────────────────────────────────────────
 with st.sidebar:
+    # Yahan tera DP/Logo aur naam hai
     st.markdown(f"<div style='text-align: center; margin-top: 1rem;'><div class='khata-logo' style='margin: 0 auto 1rem auto; width: 60px; height: 60px; font-size: 2rem;'>🏢</div><h2 style='color: white; font-family: Syne, sans-serif; font-size: 1.5rem; font-weight:800; margin-bottom:0;'>{st.session_state.company_name}</h2><div style='color: #A89EFF; font-size: 0.8rem; letter-spacing:1px; margin-bottom: 2.5rem; text-transform:uppercase; font-weight:600;'>Master Admin Dashboard</div></div>", unsafe_allow_html=True)
     
+    # Yahan tera Name, ID, Password change karne ka form hai
     with st.expander("⚙️ System Preferences", expanded=False):
         with st.form("settings_form"):
             st.markdown("**Update Profile Details**")
@@ -983,16 +985,7 @@ with st.sidebar:
             new_pass = st.text_input("New Password", type="password", value=st.session_state.admin_pass)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("💾 Save Configuration", use_container_width=True):
-                st.session_state.company_name = new_comp
-                st.session_state.admin_user = new_user
-                st.session_state.admin_pass = new_pass
-                st.success("Preferences Updated!")
-                st.rerun()
-                
-    st.markdown("<div style='margin-top: 3rem;'></div>", unsafe_allow_html=True)
-    if st.button("🚪 Terminate Session", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
+# ...
 
 # ─────────────────────────────────────────────
 # 4. CLIENT SETUP
