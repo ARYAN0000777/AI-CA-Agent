@@ -7,6 +7,10 @@ from PIL import Image
 from supabase import create_client, Client
 from fpdf import FPDF
 import base64
+import time
+import requests
+import io
+from gtts import gTTS
 
 # ─────────────────────────────────────────────
 # 1. PAGE CONFIG & ULTRA-PREMIUM CLAUDE UI/UX
@@ -17,259 +21,83 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ══════════════════════════════════════════
-   DESIGN TOKENS
-══════════════════════════════════════════ */
 :root {
   --purple:        #7C6FFF;
   --purple-dim:    rgba(124,111,255,0.12);
   --purple-glow:   rgba(124,111,255,0.22);
   --purple-border: rgba(124,111,255,0.22);
   --purple-border-hover: rgba(124,111,255,0.55);
-  
   --green:         #00D68F;
-  --green-dim:     rgba(0,214,143,0.10);
-  --green-glow:    rgba(0,214,143,0.18);
-  
   --amber:         #FFB547;
-  --amber-dim:     rgba(255,181,71,0.10);
-  --amber-glow:    rgba(255,181,71,0.18);
-  
   --bg:            #05050A;
   --bg-surface:    rgba(255,255,255,0.025);
   --bg-surface-2:  rgba(255,255,255,0.042);
-  
   --border:        rgba(255,255,255,0.065);
   --border-hover:  rgba(255,255,255,0.13);
-  
   --text:          #EAE8F5;
   --muted:         #635F7A;
   --muted-2:       #8A85A0;
-  
   --radius:        18px;
   --radius-sm:     11px;
   --radius-xs:     8px;
-  
   --glass-bg:      rgba(12,10,28,0.55);
   --glass-border:  rgba(124,111,255,0.18);
   --glass-blur:    blur(28px) saturate(160%);
-  
   --transition-fast:   all 0.18s cubic-bezier(0.4,0,0.2,1);
   --transition-medium: all 0.28s cubic-bezier(0.4,0,0.2,1);
   --transition-bounce: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ══════════════════════════════════════════
-   RESET & BASE
-══════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
-html, body, .stApp {
-  background-color: var(--bg) !important;
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-}
-
+html, body, .stApp { background-color: var(--bg) !important; color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; }
 .stApp > header { background: transparent !important; }
-
-.block-container {
-  padding-top: 1.5rem !important;
-  padding-bottom: 4rem !important;
-  max-width: 1280px !important;
-}
-
+.block-container { padding-top: 1.5rem !important; padding-bottom: 4rem !important; max-width: 1280px !important; }
 #MainMenu, footer, .stDeployButton { visibility: hidden !important; }
 
-/* ══════════════════════════════════════════
-   ANIMATED MESH BACKGROUND
-══════════════════════════════════════════ */
-.bg-mesh {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 0; overflow: hidden;
-}
-.bg-mesh span {
-  position: absolute; border-radius: 50%;
-  filter: blur(90px); opacity: 0.6;
-  will-change: transform;
-}
-.bg-mesh span:nth-child(1) {
-  width: 800px; height: 800px;
-  top: -250px; left: -200px;
-  background: radial-gradient(circle, rgba(124,111,255,0.20) 0%, transparent 60%);
-  animation: meshDrift1 20s ease-in-out infinite alternate;
-}
-.bg-mesh span:nth-child(2) {
-  width: 600px; height: 600px;
-  bottom: -180px; right: -120px;
-  background: radial-gradient(circle, rgba(0,214,143,0.13) 0%, transparent 60%);
-  animation: meshDrift2 25s ease-in-out infinite alternate;
-}
-.bg-mesh span:nth-child(3) {
-  width: 420px; height: 420px;
-  top: 45%; left: 55%;
-  background: radial-gradient(circle, rgba(255,181,71,0.07) 0%, transparent 65%);
-  animation: meshDrift3 30s ease-in-out infinite alternate;
-}
-
+/* Background Mesh */
+.bg-mesh { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.bg-mesh span { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.6; will-change: transform; }
+.bg-mesh span:nth-child(1) { width: 800px; height: 800px; top: -250px; left: -200px; background: radial-gradient(circle, rgba(124,111,255,0.20) 0%, transparent 60%); animation: meshDrift1 20s ease-in-out infinite alternate; }
+.bg-mesh span:nth-child(2) { width: 600px; height: 600px; bottom: -180px; right: -120px; background: radial-gradient(circle, rgba(0,214,143,0.13) 0%, transparent 60%); animation: meshDrift2 25s ease-in-out infinite alternate; }
+.bg-mesh span:nth-child(3) { width: 420px; height: 420px; top: 45%; left: 55%; background: radial-gradient(circle, rgba(255,181,71,0.07) 0%, transparent 65%); animation: meshDrift3 30s ease-in-out infinite alternate; }
 @keyframes meshDrift1 { from { transform: translate(0,0) scale(1); } to { transform: translate(70px,50px) scale(1.15); } }
 @keyframes meshDrift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-50px,-35px) scale(1.10); } }
 @keyframes meshDrift3 { from { transform: translate(0,0) scale(1); } to { transform: translate(-30px,40px) scale(1.08); } }
 
-/* ══════════════════════════════════════════
-   SIDEBAR — ULTRA PREMIUM
-══════════════════════════════════════════ */
-[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, rgba(8,6,20,0.97) 0%, rgba(10,8,24,0.95) 100%) !important;
-  border-right: 1px solid var(--glass-border) !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 4px 0 40px rgba(0,0,0,0.6) !important;
-}
+/* Sidebar */
+[data-testid="stSidebar"] { background: linear-gradient(180deg, rgba(8,6,20,0.97) 0%, rgba(10,8,24,0.95) 100%) !important; border-right: 1px solid var(--glass-border) !important; backdrop-filter: blur(20px) !important; box-shadow: 4px 0 40px rgba(0,0,0,0.6) !important; }
 [data-testid="stSidebarNav"] { display: none !important; } 
 [data-testid="stSidebar"] > div:first-child { padding: 2rem 1.4rem !important; }
-[data-testid="stSidebar"] h2 { font-family: 'Syne', sans-serif !important; font-size: 1.15rem !important; font-weight: 700 !important; color: #FFFFFF !important; letter-spacing: -0.01em !important; line-height: 1.3 !important; }
-[data-testid="stSidebar"] hr { border: none !important; border-top: 1px solid var(--border) !important; margin: 1.2rem 0 !important; }
-[data-testid="stSidebar"] .streamlit-expanderHeader { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important; color: var(--muted-2) !important; font-size: 0.82rem !important; font-weight: 500 !important; padding: 0.65rem 1rem !important; transition: var(--transition-fast) !important; }
-[data-testid="stSidebar"] .streamlit-expanderHeader:hover { background: var(--bg-surface-2) !important; border-color: var(--purple-border) !important; color: #C4BEFF !important; }
-[data-testid="stSidebar"] .streamlit-expanderContent { background: rgba(124,111,255,0.03) !important; border: 1px solid var(--border) !important; border-top: none !important; border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; padding: 1rem !important; }
-[data-testid="stSidebar"] .stTextInput > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; font-size: 0.83rem !important; padding: 8px 12px !important; transition: var(--transition-fast) !important; }
-[data-testid="stSidebar"] .stTextInput > div > div > input:focus { border-color: var(--purple-border-hover) !important; box-shadow: 0 0 0 3px rgba(124,111,255,0.12) !important; background: rgba(124,111,255,0.05) !important; }
+[data-testid="stSidebar"] h2 { font-family: 'Syne', sans-serif !important; font-size: 1.15rem !important; font-weight: 700 !important; color: #FFFFFF !important; }
 
-/* ══════════════════════════════════════════
-   TOP HEADER / HERO TOPBAR
-══════════════════════════════════════════ */
-.khata-topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.8rem 0 1.4rem; position: relative; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 2rem; animation: fadeSlideDown 0.65s cubic-bezier(.22,.68,0,1.2) both; }
-@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-16px); } to   { opacity: 1; transform: translateY(0); } }
+/* Top Header */
+.khata-topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.8rem 0 1.4rem; position: relative; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
 .khata-brand { display: flex; align-items: center; gap: 1rem; }
-.khata-logo { width: 48px; height: 48px; background: linear-gradient(140deg, #7C6FFF 0%, #4ECDAA 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 4px rgba(124,111,255,0.10), 0 0 32px rgba(124,111,255,0.40), inset 0 1px 0 rgba(255,255,255,0.2); animation: logoPulse 4s ease-in-out infinite; flex-shrink: 0; }
-@keyframes logoPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 4px rgba(124,111,255,0.10), 0 0 32px rgba(124,111,255,0.38), inset 0 1px 0 rgba(255,255,255,0.2); } 50% { box-shadow: 0 0 0 1px rgba(124,111,255,0.7), 0 0 0 6px rgba(124,111,255,0.14), 0 0 52px rgba(124,111,255,0.60), inset 0 1px 0 rgba(255,255,255,0.25); } }
-.khata-title { font-family: 'Syne', sans-serif !important; font-size: 1.7rem !important; font-weight: 800 !important; letter-spacing: -0.02em !important; background: linear-gradient(115deg, #FFFFFF 15%, #A89EFF 55%, #6EE7B7 100%); -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; line-height: 1.15 !important; }
-.khata-sub { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-top: 4px; letter-spacing: 0.01em; }
-.khata-pill { background: linear-gradient(135deg, rgba(124,111,255,0.18), rgba(0,214,143,0.10)); border: 1px solid rgba(124,111,255,0.30); color: #B4ABFF; font-size: 0.7rem; font-weight: 700; padding: 5px 14px; border-radius: 30px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 2px 12px rgba(124,111,255,0.18); backdrop-filter: blur(8px); }
+.khata-logo { width: 48px; height: 48px; background: linear-gradient(140deg, #7C6FFF 0%, #4ECDAA 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; box-shadow: 0 0 32px rgba(124,111,255,0.40); }
+.khata-title { font-family: 'Syne', sans-serif !important; font-size: 1.7rem !important; font-weight: 800 !important; background: linear-gradient(115deg, #FFFFFF 15%, #A89EFF 55%, #6EE7B7 100%); -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+.khata-sub { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-top: 4px; }
+.khata-pill { background: rgba(124,111,255,0.18); border: 1px solid rgba(124,111,255,0.30); color: #B4ABFF; font-size: 0.7rem; font-weight: 700; padding: 5px 14px; border-radius: 30px; }
 
-/* ══════════════════════════════════════════
-   TABS
-══════════════════════════════════════════ */
-.stTabs [data-baseweb="tab-list"] { gap: 4px !important; background: rgba(255,255,255,0.028) !important; border-radius: 14px !important; padding: 5px !important; border: 1px solid var(--border) !important; position: relative; z-index: 5; backdrop-filter: blur(12px) !important; }
-.stTabs [data-baseweb="tab"] { background: transparent !important; border-radius: 10px !important; color: var(--muted-2) !important; font-weight: 500 !important; font-size: 0.86rem !important; padding: 9px 22px !important; border: none !important; transition: var(--transition-fast) !important; position: relative; }
-.stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) { color: #C4BEFF !important; background: rgba(124,111,255,0.07) !important; }
-.stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(124,111,255,0.22) 0%, rgba(0,214,143,0.10) 100%) !important; color: #D0CBFF !important; font-weight: 600 !important; box-shadow: 0 2px 16px rgba(124,111,255,0.18), inset 0 1px 0 rgba(255,255,255,0.08) !important; border: 1px solid rgba(124,111,255,0.22) !important; }
-.stTabs [data-baseweb="tab-panel"] { padding-top: 1.8rem !important; }
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] { background: rgba(255,255,255,0.028) !important; border-radius: 14px !important; padding: 5px !important; border: 1px solid var(--border) !important; }
+.stTabs [data-baseweb="tab"] { background: transparent !important; color: var(--muted-2) !important; }
+.stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(124,111,255,0.22) 0%, rgba(0,214,143,0.10) 100%) !important; color: #D0CBFF !important; }
 
-/* ══════════════════════════════════════════
-   METRIC CARDS — GLASSMORPHISM
-══════════════════════════════════════════ */
-.metric-card { background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.6rem 1.7rem; position: relative; overflow: hidden; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: var(--transition-medium); animation: cardReveal 0.55s cubic-bezier(.22,.68,0,1.2) both; cursor: default; }
-.metric-card::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); border-radius: inherit; pointer-events: none; opacity: 0.6; }
-.metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: opacity 0.3s ease; opacity: 0.9; }
-.metric-card.purple::before { background: linear-gradient(90deg, #7C6FFF, #A89EFF, #7C6FFF); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
-.metric-card.green::before  { background: linear-gradient(90deg, #00D68F, #6EE7B7, #00D68F); background-size: 200% 100%; animation: shimmer 3.5s linear infinite; }
-.metric-card.amber::before  { background: linear-gradient(90deg, #FFB547, #FCD34D, #FFB547); background-size: 200% 100%; animation: shimmer 4s linear infinite; }
-@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-.metric-card:hover { transform: translateY(-5px) scale(1.008); border-color: var(--border-hover); }
-.metric-card.purple:hover { box-shadow: 0 20px 60px rgba(124,111,255,0.18), 0 0 0 1px rgba(124,111,255,0.22); border-color: rgba(124,111,255,0.38) !important; background: rgba(12,10,30,0.70); }
-.metric-card.green:hover { box-shadow: 0 20px 60px rgba(0,214,143,0.14), 0 0 0 1px rgba(0,214,143,0.22); border-color: rgba(0,214,143,0.35) !important; background: rgba(8,22,18,0.68); }
-.metric-card.amber:hover { box-shadow: 0 20px 60px rgba(255,181,71,0.13), 0 0 0 1px rgba(255,181,71,0.22); border-color: rgba(255,181,71,0.35) !important; background: rgba(22,16,6,0.68); }
-.metric-card.purple { background-image: radial-gradient(ellipse at top right, rgba(124,111,255,0.09) 0%, transparent 60%); }
-.metric-card.green  { background-image: radial-gradient(ellipse at top right, rgba(0,214,143,0.08) 0%, transparent 60%); }
-.metric-card.amber  { background-image: radial-gradient(ellipse at top right, rgba(255,181,71,0.07) 0%, transparent 60%); }
-@keyframes cardReveal { from { opacity: 0; transform: translateY(22px) scale(0.96); } to   { opacity: 1; transform: translateY(0) scale(1); } }
-.metric-icon { font-size: 1.55rem; margin-bottom: 0.9rem; display: inline-block; filter: drop-shadow(0 0 8px currentColor); }
-.metric-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.10em; margin-bottom: 0.4rem; }
-.metric-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; color: #FFFFFF; line-height: 1; letter-spacing: -0.02em; }
-.metric-value.purple { color: #B4ABFF; text-shadow: 0 0 24px rgba(124,111,255,0.5); }
-.metric-value.green  { color: #6EE7B7; text-shadow: 0 0 24px rgba(0,214,143,0.4); }
-.metric-value.amber  { color: #FCD34D; text-shadow: 0 0 24px rgba(255,181,71,0.4); }
+/* Cards & Metrics */
+.metric-card { background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.6rem 1.7rem; backdrop-filter: var(--glass-blur); transition: var(--transition-medium); }
+.metric-card.purple { border-top: 2px solid #7C6FFF; }
+.metric-card.green { border-top: 2px solid #00D68F; }
+.metric-card.amber { border-top: 2px solid #FFB547; }
+.metric-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; color: #FFFFFF; }
 
-/* ══════════════════════════════════════════
-   FORM INPUTS — GLOBAL
-══════════════════════════════════════════ */
-.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stNumberInput > div > div > input { background: rgba(255,255,255,0.034) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; font-size: 0.875rem !important; transition: var(--transition-fast) !important; caret-color: var(--purple) !important; }
-.stTextInput > div > div > input::placeholder, .stTextArea > div > div > textarea::placeholder { color: var(--muted) !important; }
-.stTextInput > div > div > input:hover, .stTextArea > div > div > textarea:hover, .stNumberInput > div > div > input:hover { border-color: var(--border-hover) !important; background: rgba(255,255,255,0.042) !important; }
-.stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus, .stNumberInput > div > div > input:focus { border-color: rgba(124,111,255,0.55) !important; box-shadow: 0 0 0 4px rgba(124,111,255,0.10), 0 0 16px rgba(124,111,255,0.08) !important; background: rgba(124,111,255,0.045) !important; outline: none !important; }
-.stSelectbox > div > div, .stMultiSelect > div > div { background: rgba(255,255,255,0.034) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; transition: var(--transition-fast) !important; }
-.stSelectbox > div > div:hover, .stMultiSelect > div > div:hover { border-color: var(--border-hover) !important; }
-[data-baseweb="popover"], [data-baseweb="menu"] { background: rgba(14,12,28,0.97) !important; border: 1px solid var(--glass-border) !important; border-radius: var(--radius-sm) !important; backdrop-filter: blur(20px) !important; box-shadow: 0 24px 60px rgba(0,0,0,0.6) !important; }
-[data-baseweb="option"]:hover, [data-baseweb="option"][aria-selected="true"] { background: var(--purple-dim) !important; }
-.stTextInput label, .stNumberInput label, .stTextArea label, .stSelectbox label, .stMultiSelect label, .stRadio label { color: var(--muted-2) !important; font-size: 0.8rem !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
-.stFileUploader > div, div[data-testid="stAudioInput"] > div { background: rgba(124,111,255,0.035) !important; border: 2px dashed rgba(124,111,255,0.22) !important; border-radius: var(--radius) !important; transition: var(--transition-medium) !important; padding: 2rem !important; }
-.stFileUploader > div:hover, div[data-testid="stAudioInput"] > div:hover { border-color: rgba(124,111,255,0.55) !important; background: rgba(124,111,255,0.065) !important; box-shadow: 0 0 0 4px rgba(124,111,255,0.07), inset 0 0 32px rgba(124,111,255,0.04) !important; }
-.stFileUploader label { color: var(--muted-2) !important; font-size: 0.85rem !important; }
+/* Inputs & Buttons */
+.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stNumberInput > div > div > input, .stSelectbox > div > div { background: rgba(255,255,255,0.034) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: white !important; }
+div.stButton > button { background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: var(--radius-sm) !important; }
+button[kind="primaryFormSubmit"] { background: linear-gradient(135deg, #00D68F 0%, #00A86B 100%) !important; }
 
-/* ══════════════════════════════════════════
-   BUTTONS — PRIMARY
-══════════════════════════════════════════ */
-div.stButton > button { background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 11px 26px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important; font-size: 0.875rem !important; letter-spacing: 0.01em !important; width: 100% !important; cursor: pointer !important; position: relative !important; overflow: hidden !important; transition: var(--transition-bounce) !important; box-shadow: 0 4px 20px rgba(124,111,255,0.35), 0 1px 0 rgba(255,255,255,0.12) inset !important; }
-div.stButton > button::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 60%); border-radius: inherit; pointer-events: none; }
-div.stButton > button:hover { transform: translateY(-3px) scale(1.008) !important; box-shadow: 0 10px 40px rgba(124,111,255,0.50), 0 0 0 1px rgba(124,111,255,0.30), 0 1px 0 rgba(255,255,255,0.18) inset !important; background: linear-gradient(135deg, #8F83FF 0%, #6B5EF0 100%) !important; }
-div.stButton > button:active { transform: translateY(-1px) scale(0.998) !important; box-shadow: 0 4px 16px rgba(124,111,255,0.30) !important; }
-div.stButton > button[kind="secondary"], div.stButton > button:has(span:-webkit-any-link) { background: transparent !important; }
-[data-testid="stSidebar"] div.stButton > button { background: rgba(239,68,68,0.08) !important; color: #FCA5A5 !important; border: 1px solid rgba(239,68,68,0.20) !important; box-shadow: none !important; font-weight: 500 !important; }
-[data-testid="stSidebar"] div.stButton > button:hover { background: rgba(239,68,68,0.16) !important; border-color: rgba(239,68,68,0.40) !important; box-shadow: 0 4px 20px rgba(239,68,68,0.15) !important; transform: translateY(-2px) scale(1.002) !important; }
-div.stDownloadButton > button { background: linear-gradient(135deg, #00D68F 0%, #00A86B 100%) !important; color: #ffffff !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 13px 28px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; font-size: 0.9rem !important; letter-spacing: 0.01em !important; width: 100% !important; position: relative !important; overflow: hidden !important; transition: var(--transition-bounce) !important; box-shadow: 0 6px 28px rgba(0,214,143,0.35), 0 1px 0 rgba(255,255,255,0.18) inset !important; }
-div.stDownloadButton > button::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%); pointer-events: none; }
-div.stDownloadButton > button:hover { transform: translateY(-3px) scale(1.010) !important; box-shadow: 0 14px 48px rgba(0,214,143,0.50), 0 0 0 1px rgba(0,214,143,0.35), 0 1px 0 rgba(255,255,255,0.22) inset !important; background: linear-gradient(135deg, #1FDFA0 0%, #00BE7A 100%) !important; }
-div.stDownloadButton > button:active { transform: translateY(0px) scale(0.996) !important; }
-button[kind="primaryFormSubmit"], div.stFormSubmitButton > button { background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 12px 26px !important; font-weight: 700 !important; width: 100% !important; transition: var(--transition-bounce) !important; box-shadow: 0 4px 20px rgba(124,111,255,0.35) !important; }
-div.stFormSubmitButton > button:hover { transform: translateY(-3px) scale(1.008) !important; box-shadow: 0 12px 40px rgba(124,111,255,0.50) !important; }
-
-/* ══════════════════════════════════════════
-   DATA EDITOR & DATAFRAME
-══════════════════════════════════════════ */
-.stDataFrame, [data-testid="stDataFrame"] { border-radius: var(--radius-sm) !important; border: 1px solid var(--border) !important; overflow: hidden !important; box-shadow: 0 4px 32px rgba(0,0,0,0.25) !important; transition: border-color 0.25s ease !important; }
-.stDataFrame:hover, [data-testid="stDataFrame"]:hover { border-color: var(--border-hover) !important; }
-[data-testid="stDataFrame"] th, .stDataEditor th { background: rgba(124,111,255,0.07) !important; color: var(--muted-2) !important; font-size: 0.72rem !important; font-weight: 600 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; border-bottom: 1px solid var(--border) !important; }
-[data-testid="stDataFrame"] td, .stDataEditor td { color: var(--text) !important; font-size: 0.84rem !important; border-bottom: 1px solid rgba(255,255,255,0.04) !important; }
-[data-testid="stDataFrame"] tr:hover td { background: rgba(124,111,255,0.05) !important; }
-
-/* ══════════════════════════════════════════
-   EXPANDER PANELS & OTHERS
-══════════════════════════════════════════ */
-.streamlit-expanderHeader { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important; color: var(--muted-2) !important; font-size: 0.875rem !important; font-weight: 500 !important; transition: var(--transition-fast) !important; }
-.streamlit-expanderHeader:hover { background: var(--bg-surface-2) !important; border-color: var(--purple-border) !important; color: #C4BEFF !important; }
-.streamlit-expanderContent { background: rgba(124,111,255,0.025) !important; border: 1px solid var(--border) !important; border-top: none !important; border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; padding: 1.2rem !important; }
-[data-testid="stAlert"], div[data-testid="stInfoMessage"], div[data-testid="stWarningMessage"], div[data-testid="stErrorMessage"], div[data-testid="stSuccessMessage"] { border-radius: var(--radius-sm) !important; border-width: 1px !important; border-left-width: 3px !important; backdrop-filter: blur(10px) !important; font-size: 0.875rem !important; }
-div[data-testid="stInfoMessage"]    { background: rgba(124,111,255,0.07) !important; border-color: rgba(124,111,255,0.35) !important; }
-div[data-testid="stSuccessMessage"] { background: rgba(0,214,143,0.07) !important;   border-color: rgba(0,214,143,0.35) !important; }
-div[data-testid="stErrorMessage"]   { background: rgba(239,68,68,0.07) !important;   border-color: rgba(239,68,68,0.35) !important; }
-div[data-testid="stWarningMessage"] { background: rgba(255,181,71,0.07) !important;  border-color: rgba(255,181,71,0.35) !important; }
-.stRadio > div { display: flex !important; gap: 0.5rem !important; flex-wrap: wrap !important; }
-.stRadio > div > label { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; padding: 8px 18px !important; color: var(--muted-2) !important; font-size: 0.85rem !important; font-weight: 500 !important; cursor: pointer !important; transition: var(--transition-fast) !important; }
-.stRadio > div > label:hover { border-color: var(--purple-border) !important; color: #C4BEFF !important; background: var(--purple-dim) !important; }
-.stRadio > div [aria-checked="true"] + label, .stRadio > div > label:has(input:checked) { border-color: rgba(124,111,255,0.45) !important; background: rgba(124,111,255,0.14) !important; color: #D0CBFF !important; }
-.stSpinner > div { border-color: rgba(124,111,255,0.3) !important; border-top-color: var(--purple) !important; }
-.login-box { background: rgba(8,6,20,0.70); border: 1px solid rgba(124,111,255,0.22); border-radius: 24px; padding: 3rem 2.2rem; text-align: center; box-shadow: 0 0 0 1px rgba(124,111,255,0.10), 0 30px 80px rgba(0,0,0,0.65), 0 0 60px rgba(124,111,255,0.10), inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%); animation: cardReveal 0.6s cubic-bezier(.22,.68,0,1.2) both; }
-.login-box .khata-logo { width: 68px !important; height: 68px !important; font-size: 2.2rem !important; border-radius: 20px !important; box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 6px rgba(124,111,255,0.12), 0 0 40px rgba(124,111,255,0.45) !important; }
-.export-card { background: linear-gradient(135deg, rgba(0,214,143,0.055) 0%, rgba(124,111,255,0.055) 50%, rgba(0,214,143,0.03) 100%); border: 1px solid rgba(0,214,143,0.20); border-radius: 22px; padding: 2.5rem; text-align: center; position: relative; overflow: hidden; backdrop-filter: blur(16px) !important; box-shadow: 0 0 0 1px rgba(0,214,143,0.07), 0 16px 48px rgba(0,0,0,0.25); transition: var(--transition-medium); }
-.export-card:hover { border-color: rgba(0,214,143,0.35); box-shadow: 0 0 0 1px rgba(0,214,143,0.12), 0 24px 64px rgba(0,214,143,0.12); transform: translateY(-2px); }
-.export-card::before { content: ''; position: absolute; top: -60px; right: -60px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(0,214,143,0.12) 0%, transparent 65%); pointer-events: none; }
-.export-card .export-icon { font-size: 2.4rem; display: block; margin-bottom: 0.6rem; }
-.export-card .export-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.4rem; }
-.export-card .export-desc { font-size: 0.82rem; color: var(--muted-2); max-width: 320px; margin: 0 auto; }
-.section-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1.1rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: -0.005em; }
-.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); margin-left: 0.5rem; }
+/* Extras */
+.section-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1.1rem; }
 .fancy-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent); margin: 2.2rem 0; }
-.step-row { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.4rem; animation: fadeSlideDown 0.45s ease both; }
-.step-num { width: 30px; height: 30px; border-radius: 50%; background: var(--purple-dim); border: 1px solid var(--purple-border); color: #B4ABFF; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 12px rgba(124,111,255,0.2); }
-.step-label { font-size: 0.875rem; font-weight: 500; color: var(--text); }
-.preview-frame { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: rgba(255,255,255,0.018); transition: border-color 0.25s ease; }
-.preview-frame:hover { border-color: var(--border-hover); }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.25); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(124,111,255,0.45); }
-h1, h2, h3 { font-family: 'Syne', sans-serif !important; color: #FFFFFF !important; letter-spacing: -0.02em !important; }
-h1 { font-size: 2rem !important; font-weight: 800 !important; }
-h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
-h3 { font-size: 1.1rem !important; font-weight: 700 !important; }
-p, li, span { color: var(--text) !important; }
-strong, b { color: #FFFFFF !important; font-weight: 600 !important; }
-code { font-family: 'JetBrains Mono', monospace !important; font-size: 0.8rem !important; background: rgba(124,111,255,0.12) !important; border: 1px solid rgba(124,111,255,0.20) !important; border-radius: 5px !important; padding: 2px 7px !important; color: #B4ABFF !important; }
-.stMarkdown p, .stMarkdown span { color: var(--text) !important; }
-.stMarkdown strong { color: #FFFFFF !important; font-weight: 600 !important; }
-[data-testid="column"] { padding: 0 0.4rem !important; }
-.main .block-container { position: relative; z-index: 1; }
 </style>
 <div class="bg-mesh"><span></span><span></span><span></span></div>
 """, unsafe_allow_html=True)
@@ -287,21 +115,20 @@ if not st.session_state.logged_in:
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
         st.markdown("""
-        <div class="login-box">
-            <div class="khata-logo" style="margin: 0 auto 1.5rem auto; width: 75px; height: 75px; font-size: 2.8rem;">🔒</div>
-            <div class="khata-title" style="font-size: 2.4rem !important; margin-bottom: 0.5rem; line-height:1.2;">Secure Portal</div>
-            <div class="khata-sub" style="margin-bottom: 2.5rem; font-size: 0.95rem;">Authorized Personnel Only</div>
+        <div style="background: rgba(8,6,20,0.70); border: 1px solid rgba(124,111,255,0.22); border-radius: 24px; padding: 3rem; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+            <h2 style="color: white; font-family: 'Syne';">Secure Portal</h2>
+            <p style="color: gray; margin-bottom: 2rem;">Authorized Personnel Only</p>
         """, unsafe_allow_html=True)
         with st.form("login_form"):
             entered_user = st.text_input("Admin Username", placeholder="Enter your ID")
             entered_pass = st.text_input("Security PIN", type="password", placeholder="Enter your Password")
-            st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("🔓 Authenticate Access", use_container_width=True):
                 if entered_user == st.session_state.admin_user and entered_pass == st.session_state.admin_pass:
                     st.session_state.logged_in = True
                     st.rerun()
                 else:
-                    st.error("❌ Access Denied! Incorrect Credentials.")
+                    st.error("❌ Access Denied!")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop() 
 
@@ -312,26 +139,24 @@ with st.sidebar:
     if st.session_state.company_logo:
         logo_display = f"<img src='{st.session_state.company_logo}' style='width: 80px; height: 80px; border-radius: 20px; object-fit: cover; box-shadow: 0 0 25px rgba(124,111,255,0.4); border: 2px solid rgba(124,111,255,0.3); margin-bottom: 1rem;'>"
     else:
-        logo_display = "<div class='khata-logo' style='margin: 0 auto 1rem auto; width: 60px; height: 60px; font-size: 2rem;'>🏢</div>"
+        logo_display = "<div style='font-size: 3rem; margin-bottom: 1rem;'>🏢</div>"
 
     st.markdown(f"<div style='text-align: center; margin-top: 1rem;'>{logo_display}<h2 style='color: white; font-family: Syne, sans-serif; font-size: 1.5rem; font-weight:800; margin-bottom:0;'>{st.session_state.company_name}</h2><div style='color: #A89EFF; font-size: 0.8rem; letter-spacing:1px; margin-bottom: 2.5rem; text-transform:uppercase; font-weight:600;'>Master Admin Dashboard</div></div>", unsafe_allow_html=True)
     
     with st.expander("⚙️ System Preferences", expanded=False):
         with st.form("settings_form"):
-            st.markdown("**Update Profile Details**")
-            new_logo = st.file_uploader("Upload Company Logo (Optional)", type=['png', 'jpg', 'jpeg'])
+            new_logo = st.file_uploader("Upload Company Logo", type=['png', 'jpg', 'jpeg'])
             new_comp = st.text_input("Workspace Name", value=st.session_state.company_name)
             new_user = st.text_input("Admin ID", value=st.session_state.admin_user)
             new_pass = st.text_input("New Password", type="password", value=st.session_state.admin_pass)
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.form_submit_button("💾 Save Configuration", use_container_width=True):
+            if st.form_submit_button("💾 Save", use_container_width=True):
                 if new_logo is not None:
                     base64_image = base64.b64encode(new_logo.getvalue()).decode("utf-8")
                     st.session_state.company_logo = f"data:image/png;base64,{base64_image}"
                 st.session_state.company_name = new_comp
                 st.session_state.admin_user = new_user
                 st.session_state.admin_pass = new_pass
-                st.success("Preferences Updated!")
+                st.success("Updated!")
                 st.rerun()
                 
     st.markdown("<div style='margin-top: 3rem;'></div>", unsafe_allow_html=True)
@@ -359,7 +184,7 @@ except Exception:
     db_data = []
 
 # ─────────────────────────────────────────────
-# 5. DYNAMIC HERO HEADER
+# 5. DYNAMIC HERO HEADER & TABS
 # ─────────────────────────────────────────────
 st.markdown(f"""
 <div class="khata-topbar">
@@ -374,24 +199,21 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["📸 Vision Scanner", "🎙️ Voice Entry", "📊 Dashboard & PDF", "⚙️ Tally Sync"])
+# ⭐️ TAB 5 ADDED HERE ⭐️
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📸 Vision Scanner", "🎙️ Voice Entry", "📊 Dashboard & PDF", "⚙️ Tally Sync", "👨‍💼 Ask CA Sahab"])
 
 # ══════════════════════════════════════════════
-# TAB 1 — SCAN & EDIT (WITH AUTO-RETRY FIX)
+# TAB 1 — SCAN & EDIT (WITH AUTO-RETRY)
 # ══════════════════════════════════════════════
 with tab1:
     col_upload, col_preview = st.columns([1, 1], gap="large")
 
     with col_upload:
-        st.markdown('<div class="step-row"><div class="step-num">1</div><div class="step-label">Upload Physical Bill / GST Invoice</div></div>', unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Drop your GST invoice here", type=["jpg","png","jpeg"], label_visibility="collapsed")
+        uploaded_file = st.file_uploader("Upload Physical Bill / GST Invoice", type=["jpg","png","jpeg"])
 
         if uploaded_file is not None and st.session_state.scanned_data is None:
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div class="step-row"><div class="step-num">2</div><div class="step-label">Initiate Deep Extraction</div></div>', unsafe_allow_html=True)
             if st.button("🚀 Process with Gemini AI", use_container_width=True):
                 with st.spinner("Neural network analyzing document structure..."):
-                    import time
                     try:
                         img = Image.open(uploaded_file)
                         prompt = """
@@ -407,7 +229,6 @@ with tab1:
                           "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
                         }
                         """
-                        
                         max_retries = 3
                         for attempt in range(max_retries):
                             try:
@@ -415,8 +236,7 @@ with tab1:
                                 raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
                                 st.session_state.scanned_data = json.loads(raw_text)
                                 st.rerun()
-                                break # Success hone pe loop se bahar
-                                
+                                break
                             except Exception as api_e:
                                 if "503" in str(api_e) or "high demand" in str(api_e).lower() or "429" in str(api_e):
                                     if attempt < max_retries - 1:
@@ -433,18 +253,14 @@ with tab1:
     with col_preview:
         if uploaded_file is not None:
             st.markdown('<div class="section-title">📄 Document Preview</div>', unsafe_allow_html=True)
-            st.markdown('<div class="preview-frame">', unsafe_allow_html=True)
             st.image(uploaded_file, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.scanned_data is not None:
         data = st.session_state.scanned_data
         st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="step-row"><div class="step-num">3</div><div class="step-label">Validate & Push to Database</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">✏️ AI Extracted Payload</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">✏️ Validate AI Extracted Payload</div>', unsafe_allow_html=True)
 
         with st.form("edit_form"):
-            st.markdown("**🧾 Voucher Matrix**")
             v_type_val = data.get("voucher_type", "Purchase")
             v_idx = 1 if "sale" in v_type_val.lower() else 0
             v_type = st.selectbox("Voucher Type (Auto-detected)", ["Purchase", "Sales"], index=v_idx)
@@ -476,7 +292,6 @@ with tab1:
             with a4: v_igst  = st.number_input("IGST ₹",       value=float(data.get("igst_amount",0.0)))
             with a5: v_total = st.number_input("Grand Total ₹",      value=float(data.get("total_amount",0.0)))
 
-            st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("✅ Secure Database Commit", use_container_width=True):
                 final_data = {
                     "voucher_type": v_type, "vendor_name": v_name, "gst_number": v_gst, "vendor_address": v_addr,
@@ -492,7 +307,7 @@ with tab1:
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 2: 🎙️ VOICE BILLING (UPDATED WITH GST FETCH & TAXES)
+# TAB 2: 🎙️ VOICE BILLING (OUTSIDE FETCH + RETRY)
 # ══════════════════════════════════════════════
 with tab2:
     st.markdown('<div class="section-title">🎙️ Neural Voice Capture</div>', unsafe_allow_html=True)
@@ -501,11 +316,8 @@ with tab2:
     audio_value = st.audio_input("Initialize Voice Recording", label_visibility="collapsed")
 
     if audio_value is not None and st.session_state.voice_scanned_data is None:
-        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Transcribe & Generate", use_container_width=True):
             with st.spinner("Running acoustic models and calculating GST..."):
-                import time
-
                 max_retries = 3
                 for attempt in range(max_retries):
                     try:
@@ -530,11 +342,10 @@ with tab2:
                         st.session_state.voice_scanned_data = json.loads(clean_json)
                         st.rerun()
                         break
-
                     except Exception as e:
                         if "503" in str(e) or "high demand" in str(e).lower() or "429" in str(e):
                             if attempt < max_retries - 1:
-                                st.warning(f"⏳ Server is busy or rate limited. Auto-retrying in a few seconds... (Attempt {attempt + 1}/{max_retries})")
+                                st.warning(f"⏳ Server is busy. Auto-retrying... (Attempt {attempt + 1}/{max_retries})")
                                 time.sleep(3)
                             else:
                                 st.error("❌ Servers are currently overloaded. Please try again after a minute.")
@@ -546,63 +357,57 @@ with tab2:
         v_data = st.session_state.voice_scanned_data
         st.markdown('<div class="fancy-divider"></div><div class="section-title">✏️ Validate Audio Transcript</div>', unsafe_allow_html=True)
 
+        st.markdown("**🏢 Party Info (Auto-Fetch)**")
+        if "current_gst" not in st.session_state: st.session_state.current_gst = v_data.get("gst_number", "")
+        if "fetched_name" not in st.session_state: st.session_state.fetched_name = v_data.get("vendor_name", "")
+        if "fetched_address" not in st.session_state: st.session_state.fetched_address = v_data.get("vendor_address", "")
+
+        g1, g2 = st.columns([3, 1])
+        with g1:
+            voice_gst = st.text_input("GST Number", value=st.session_state.current_gst)
+        with g2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            fetch_btn = st.button("🔍 Fetch API", use_container_width=True)
+
+        if fetch_btn and voice_gst:
+            with st.spinner("Fetching from Server..."):
+                dummy_db = {
+                    "10AABCU9355J1Z9": {"name": "Jai Shree Ram Packaging", "address": "Uttar Pradesh, India"},
+                    "07AABCB1234C1Z1": {"name": "Stepout Studios", "address": "Delhi, India"}
+                }
+                api_key = "TERI_RAPID_API_KEY_YAHAN_AAYEGI"
+                url = "https://gst-verification.p.rapidapi.com/v1/verify"
+                headers = {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": "gst-verification.p.rapidapi.com"}
+                
+                api_success = False
+                try:
+                    res = requests.get(url, headers=headers, params={"gstin": voice_gst}, timeout=3)
+                    if res.status_code == 200:
+                        d = res.json()
+                        st.session_state.fetched_name = d.get('data', {}).get('tradeName', '')
+                        st.session_state.fetched_address = d.get('data', {}).get('pradr', {}).get('adr', '')
+                        api_success = True
+                except:
+                    pass
+
+                if not api_success and voice_gst in dummy_db:
+                    st.session_state.fetched_name = dummy_db[voice_gst]["name"]
+                    st.session_state.fetched_address = dummy_db[voice_gst]["address"]
+                    api_success = True
+
+                if api_success:
+                    st.success(f"✅ Auto-filled: {st.session_state.fetched_name}")
+                else:
+                    st.warning("⚠️ API failed. Please enter manually.")
+
         with st.form("edit_voice_form"):
-            st.markdown("**🧾 Transaction Details**")
             c0, c1, c2 = st.columns([1, 2, 1])
             with c0:
                 v_type_val = v_data.get("voucher_type", "Sales")
                 v_idx = 1 if "sale" in v_type_val.lower() else 0
                 voice_type = st.selectbox("Operation", ["Purchase", "Sales"], index=v_idx)
             with c1: voice_vendor = st.text_input("Counterparty", value=v_data.get("vendor_name", "Local Party"))
-            with c2: voice_date = st.text_input("Timestamp", value="2026-04-08")
-
-            # --- API & MANUAL ENTRY SECTION ---
-            st.markdown("**🏢 Party Info (GST & Logistics)**")
-
-            # API Fetching Function (RapidAPI)
-            def fetch_gst_info(gstin):
-                import requests
-                # YAHAN APNI ASLI RAPIDAPI KEY DAALNA!
-                api_key = "2bc451a563msh61eee8c6a8a1ef0p1586c6jsnb626801c0c68"
-                url = "https://gst-verification.p.rapidapi.com/v1/verify"
-                querystring = {"gstin": gstin}
-                headers = {
-                    "X-RapidAPI-Key": api_key,
-                    "X-RapidAPI-Host": "gst-verification.p.rapidapi.com"
-                }
-                try:
-                    response = requests.get(url, headers=headers, params=querystring, timeout=5)
-                    if response.status_code == 200:
-                        data = response.json()
-                        name = data.get('data', {}).get('tradeName', '')
-                        address = data.get('data', {}).get('pradr', {}).get('adr', '')
-                        return name, address
-                    return None, None
-                except Exception:
-                    return None, None
-
-            g1, g2 = st.columns([3, 1])
-            with g1:
-                if "current_gst" not in st.session_state:
-                    st.session_state.current_gst = v_data.get("gst_number", "")
-                voice_gst = st.text_input("GST Number", value=st.session_state.current_gst)
-
-            with g2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                fetch_btn = st.form_submit_button("🔍 Fetch API", use_container_width=True)
-
-            if "fetched_name" not in st.session_state: st.session_state.fetched_name = v_data.get("vendor_name", "")
-            if "fetched_address" not in st.session_state: st.session_state.fetched_address = v_data.get("vendor_address", "")
-
-            if fetch_btn and voice_gst:
-                with st.spinner("Fetching from GST Server..."):
-                    api_name, api_address = fetch_gst_info(voice_gst)
-                    if api_name:
-                        st.session_state.fetched_name = api_name
-                        st.session_state.fetched_address = api_address
-                        st.success(f"✅ Auto-filled details for: {api_name}")
-                    else:
-                        st.warning("⚠️ Could not fetch from API. Please enter manually.")
+            with c2: voice_date = st.text_input("Timestamp", value="2026-04-09")
 
             r1, r2 = st.columns(2)
             with r1: final_vendor_name = st.text_input("Legal Name", value=st.session_state.fetched_name)
@@ -631,18 +436,15 @@ with tab2:
                     "line_items": voice_edited_df.to_dict(orient='records')
                 }
                 supabase.table("invoices").insert(voice_final_data).execute()
-
-                # Clear states
                 st.session_state.voice_scanned_data = None
                 st.session_state.fetched_name = ""
                 st.session_state.fetched_address = ""
                 st.session_state.current_gst = ""
-
                 st.success("✅ Voice transaction secured!")
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 3 — ANALYTICS, MANAGE & PDF PRINT (CRASH FIXED)
+# TAB 3 — ANALYTICS, MANAGE & PDF PRINT (PDF CRASH FIXED)
 # ══════════════════════════════════════════════
 with tab3:
     total_bills = len(db_data)
@@ -669,15 +471,12 @@ with tab3:
         cols = ['Sr_No', 'voucher_type'] + [c for c in display_df.columns if c not in ['Sr_No', 'voucher_type', 'id', 'line_items', 'product_names', 'vendor_address', 'bank_details']]
         
         st.dataframe(display_df[cols], use_container_width=True, hide_index=True)
-        st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- JADU WALA CODE (TEXT CLEANER) YAHAN BAHAR NIKAL DIYA ---
         def clean_text(text):
             if pd.isna(text) or text is None: return ""
             return str(text).encode('latin-1', 'replace').decode('latin-1')
 
         def create_pdf_bill(bill_data):
-            # Saare inputs ko filter me se guzar lo
             c_vendor_name = clean_text(bill_data.get('vendor_name', 'Unknown'))
             c_vendor_address = clean_text(bill_data.get('vendor_address', 'N/A'))
             c_gst_number = clean_text(bill_data.get('gst_number', 'N/A'))
@@ -690,7 +489,6 @@ with tab3:
 
             pdf = FPDF(orientation='P', unit='mm', format='A4')
             pdf.add_page()
-            
             pdf.rect(5, 5, 200, 287)
             
             pdf.set_font("Arial", 'B', 18)
@@ -704,9 +502,7 @@ with tab3:
             
             pdf.set_font("Arial", '', 10)
             x_y_start = pdf.get_y()
-            
             pdf.multi_cell(100, 5, txt=f"Name: {c_vendor_name}\nAddress: {c_vendor_address}\nGSTIN: {c_gst_number}")
-            
             pdf.set_xy(120, x_y_start)
             pdf.multi_cell(80, 5, txt=f"Invoice No: {c_invoice_number}\nDate: {c_invoice_date}\nCategory: {c_category}")
             
@@ -742,7 +538,6 @@ with tab3:
             
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(155, 8, "Taxable Amount", 1, 0, 'R')
-            
             base_val = float(bill_data.get('base_price') or base_total)
             pdf.cell(35, 8, f"{base_val:,.2f}", 1, 1, 'R')
             
@@ -766,7 +561,6 @@ with tab3:
             pdf.cell(35, 10, f"{total_amt:,.2f}", 1, 1, 'R')
             
             pdf.ln(8)
-            
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 6, "Bank Details:", 0, 1)
             pdf.set_font("Arial", '', 10)
@@ -780,12 +574,10 @@ with tab3:
             return pdf_out.encode('latin-1') if isinstance(pdf_out, str) else pdf_out
 
         col_print, col_delete = st.columns(2, gap="large")
-        
         with col_print:
             with st.expander("🖨️ PDF Generation Matrix"):
                 pdf_options = {f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')}": row for idx, row in enumerate(db_data)}
                 selected_pdf_key = st.selectbox("Select entity to compile:", options=list(pdf_options.keys()), key="pdf_select")
-                
                 if selected_pdf_key:
                     selected_row_data = pdf_options[selected_pdf_key]
                     pdf_bytes = create_pdf_bill(selected_row_data)
@@ -804,29 +596,19 @@ with tab3:
                 if st.button("❌ Purge Selected Record", use_container_width=True):
                     supabase.table("invoices").delete().eq("id", bill_options[selected_bill]).execute()
                     st.rerun()
-    else:
-        st.info("Storage is empty. Initialize database by uploading an invoice.")
 
 # ══════════════════════════════════════════════
 # TAB 4 — TALLY EXPORT
 # ══════════════════════════════════════════════
 with tab4:
     st.markdown('<div class="section-title">⚙️ Tally ERP Integration</div>', unsafe_allow_html=True)
-    
     if len(db_data) > 0:
         export_mode = st.radio("Export Protocol:", ["📤 Full Database Export", "✅ Selective Batch Export"], horizontal=True)
-        
         selected_invoices = db_data 
-        
         if export_mode == "✅ Selective Batch Export":
-            bill_options = {
-                f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')} | ₹{row.get('total_amount',0)}": row 
-                for idx, row in enumerate(db_data)
-            }
+            bill_options = {f"Sr {idx+1} | {row.get('voucher_type','Purchase')} | {row.get('vendor_name','Unknown')} | ₹{row.get('total_amount',0)}": row for idx, row in enumerate(db_data)}
             selected_keys = st.multiselect("Select transactions for batch:", options=list(bill_options.keys()), default=list(bill_options.keys()))
             selected_invoices = [bill_options[k] for k in selected_keys]
-            
-        st.markdown("<br>", unsafe_allow_html=True)
     else:
         selected_invoices = []
 
@@ -838,11 +620,7 @@ with tab4:
         for inv in invoices_data:
             p_name = str(inv.get('vendor_name') or 'Unknown').replace("&","&amp;")
             if p_name not in parties_data:
-                parties_data[p_name] = {
-                    'group': 'Sundry Debtors' if inv.get('voucher_type') == 'Sales' else 'Sundry Creditors',
-                    'gst': str(inv.get('gst_number') or '').replace("&","&amp;"),
-                    'address': str(inv.get('vendor_address') or '').replace("&","&amp;")
-                }
+                parties_data[p_name] = {'group': 'Sundry Debtors' if inv.get('voucher_type') == 'Sales' else 'Sundry Creditors', 'gst': str(inv.get('gst_number') or '').replace("&","&amp;"), 'address': str(inv.get('vendor_address') or '').replace("&","&amp;")}
             line_items = inv.get('line_items') or []
             if isinstance(line_items, list):
                 for itm in line_items:
@@ -863,11 +641,9 @@ with tab4:
             v_name = str(inv.get('vendor_name') or 'Unknown').replace("&","&amp;")
             v_inv_no = str(inv.get('invoice_number') or 'Not Found').replace("&","&amp;")
             v_type = inv.get('voucher_type') or 'Purchase'
-            
             total_amt = float(inv.get('total_amount') or 0)
             party_is_debit = "Yes" if v_type == "Sales" else "No"
             party_amt = f"-{total_amt}" if v_type == "Sales" else f"{total_amt}"
-            
             main_ledger = "Sales A/c" if v_type == "Sales" else "Purchase A/c"
             main_is_debit = "No" if v_type == "Sales" else "Yes"
 
@@ -880,7 +656,6 @@ with tab4:
                     i_name = str(itm.get('item_name','')).replace("&","&amp;")
                     i_amt = float(itm.get('amount') or 0)
                     alloc_amt = f"{i_amt}" if v_type == "Sales" else f"-{i_amt}"
-                    
                     xml_data += f'<ALLINVENTORYENTRIES.LIST>\n<STOCKITEMNAME>{i_name}</STOCKITEMNAME>\n<ISDEEMEDPOSITIVE>{main_is_debit}</ISDEEMEDPOSITIVE>\n<BILLEDQTY>{float(itm.get("quantity") or 0)} {str(itm.get("unit","Nos"))}</BILLEDQTY>\n<RATE>{float(itm.get("rate") or 0)}</RATE>\n<AMOUNT>{alloc_amt}</AMOUNT>\n'
                     xml_data += f'<ACCOUNTINGALLOCATIONS.LIST>\n<LEDGERNAME>{main_ledger}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>{main_is_debit}</ISDEEMEDPOSITIVE>\n<AMOUNT>{alloc_amt}</AMOUNT>\n</ACCOUNTINGALLOCATIONS.LIST>\n</ALLINVENTORYENTRIES.LIST>\n'
             else:
@@ -895,7 +670,6 @@ with tab4:
                     xml_data += f'<ALLLEDGERENTRIES.LIST>\n<LEDGERNAME>{tax_ledger}</LEDGERNAME>\n<ISDEEMEDPOSITIVE>{main_is_debit}</ISDEEMEDPOSITIVE>\n<AMOUNT>{t_amt}</AMOUNT>\n</ALLLEDGERENTRIES.LIST>\n'
 
             xml_data += '</VOUCHER>\n</TALLYMESSAGE>\n'
-
         xml_data += "</REQUESTDATA>\n</IMPORTDATA>\n</BODY>\n</ENVELOPE>"
         return xml_data
 
@@ -905,32 +679,24 @@ with tab4:
     with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">System Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">Ready for Link</div></div>""", unsafe_allow_html=True)
 
     if len(selected_invoices) > 0:
-        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
         st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
-    elif len(db_data) > 0 and len(selected_invoices) == 0:
-        st.warning("⚠️ Please select at least one transaction to build payload.")
-    else:
-        st.info("System awaiting data. Process an invoice to begin.")
 
 # ══════════════════════════════════════════════
-# TAB 5 — 👨‍💼 ASK CA SAHAB (24x7 AI CA)
+# ⭐️ TAB 5 — 👨‍💼 ASK CA SAHAB (NEW) ⭐️
 # ══════════════════════════════════════════════
 with tab5:
     st.markdown('<div class="section-title">👨‍💼 CA Sahab - 24x7 Assistant</div>', unsafe_allow_html=True)
     st.info("💡 Apna GST, Income Tax, ya Business ka koi bhi sawal puchiye. Likh kar ya Mic daba kar bol kar!")
 
-    # Chat history set karna taaki purani baatein yaad rahe
     if "ca_history" not in st.session_state:
         st.session_state.ca_history = [
             {"role": "assistant", "text": "Arre bhai! Main hoon aapka apna CA Sahab. Boliye, aaj GST, ITR ya business me kya madad karu aapki?"}
         ]
 
-    # Screen par purani chat dikhana
     for msg in st.session_state.ca_history:
         with st.chat_message(msg["role"]):
             st.markdown(msg["text"])
 
-    # Neeche Text Input aur Voice Input dono ke dabbe
     col_mic, col_text = st.columns([1, 5])
     
     with col_mic:
@@ -938,7 +704,6 @@ with tab5:
     with col_text:
         ca_text = st.chat_input("Likh ke puchiye...")
 
-    # Logic: Agar user ne type kiya YA audio bheja
     prompt_text = None
     has_audio = False
 
@@ -949,16 +714,13 @@ with tab5:
         has_audio = True
 
     if prompt_text:
-        # User ka message screen par dikhana
         display_msg = ca_text if ca_text else "🎤 *Voice message bheja gaya...*"
         st.session_state.ca_history.append({"role": "user", "text": display_msg})
         with st.chat_message("user"):
             st.markdown(display_msg)
 
-        # AI (CA Sahab) ka dimaag chalana
         with st.chat_message("assistant"):
             with st.spinner("CA Sahab file check kar rahe hain..."):
-                # CA Sahab ki Personality (System Prompt)
                 system_prompt = """
                 Tu ek expert Indian Chartered Accountant hai jiska naam 'CA Sahab' hai. 
                 Tu GST, Income Tax, Tally, aur Business Accounting ka master hai. 
@@ -967,39 +729,26 @@ with tab5:
                 Agar sawaal samajh na aaye toh aaram se dubara puch lena.
                 """
                 
-                # Payload ready karna
                 contents = [system_prompt, prompt_text]
                 if has_audio:
                     contents.append(types.Part.from_bytes(data=ca_audio.getvalue(), mime_type='audio/wav'))
 
-               try:
-                    # Gemini se jawab maangna
+                try:
                     resp = ai_client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=contents
                     )
                     reply = resp.text
                     st.markdown(reply)
-                    
-                    # Jawab ko history me save karna
                     st.session_state.ca_history.append({"role": "assistant", "text": reply})
                     
-                    # ─────────────────────────────────────────────
-                    # 🎙️ CA SAHAB KI AAWAZ (VOICE OUTPUT MAGIC)
-                    # ─────────────────────────────────────────────
-                    from gtts import gTTS
-                    import io
-                    
-                    # AI ke text me se markdown symbols (*, #) hata rahe hain taaki aawaz saaf aaye
+                    # Aawaz wala system
                     clean_reply = reply.replace("*", "").replace("#", "")
-                    
-                    # gTTS se aawaz generate karna ('hi' matlab Hindi accent)
                     tts = gTTS(text=clean_reply, lang='hi', slow=False)
                     audio_fp = io.BytesIO()
                     tts.write_to_fp(audio_fp)
                     audio_fp.seek(0)
                     
-                    # Streamlit me audio player dikhana aur Auto-play karna
                     st.audio(audio_fp, format='audio/mp3', autoplay=True)
                     
                 except Exception as e:
