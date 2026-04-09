@@ -733,23 +733,35 @@ with tab5:
                 if has_audio:
                     contents.append(types.Part.from_bytes(data=ca_audio.getvalue(), mime_type='audio/wav'))
 
-                try:
-                    resp = ai_client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=contents
-                    )
-                    reply = resp.text
-                    st.markdown(reply)
-                    st.session_state.ca_history.append({"role": "assistant", "text": reply})
-                    
-                    # Aawaz wala system
-                    clean_reply = reply.replace("*", "").replace("#", "")
-                    tts = gTTS(text=clean_reply, lang='hi', slow=False)
-                    audio_fp = io.BytesIO()
-                    tts.write_to_fp(audio_fp)
-                    audio_fp.seek(0)
-                    
-                    st.audio(audio_fp, format='audio/mp3', autoplay=True)
-                    
-                except Exception as e:
-                    st.error(f"⚠️ CA Sahab abhi Client meeting me busy hain. (Error: {e})")
+                # --- AUTO-RETRY JADU FOR CA SAHAB ---
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        resp = ai_client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=contents
+                        )
+                        reply = resp.text
+                        st.markdown(reply)
+                        st.session_state.ca_history.append({"role": "assistant", "text": reply})
+                        
+                        # Aawaz wala system
+                        clean_reply = reply.replace("*", "").replace("#", "")
+                        tts = gTTS(text=clean_reply, lang='hi', slow=False)
+                        audio_fp = io.BytesIO()
+                        tts.write_to_fp(audio_fp)
+                        audio_fp.seek(0)
+                        
+                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
+                        break # Agar jawab aagaya toh loop se bahar niklo
+                        
+                    except Exception as e:
+                        if "503" in str(e) or "high demand" in str(e).lower() or "429" in str(e):
+                            if attempt < max_retries - 1:
+                                st.warning(f"⏳ CA Sahab thoda busy hain, line par rahiye... (Attempt {attempt + 1}/{max_retries})")
+                                time.sleep(3)
+                            else:
+                                st.error("❌ CA Sahab abhi sach me client meeting me busy hain. Kripya 1 minute baad try karein.")
+                        else:
+                            st.error(f"⚠️ Connection Error: {e}")
+                            break
