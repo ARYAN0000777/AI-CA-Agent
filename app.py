@@ -911,3 +911,96 @@ with tab4:
         st.warning("⚠️ Please select at least one transaction to build payload.")
     else:
         st.info("System awaiting data. Process an invoice to begin.")
+
+# ══════════════════════════════════════════════
+# TAB 5 — 👨‍💼 ASK CA SAHAB (24x7 AI CA)
+# ══════════════════════════════════════════════
+with tab5:
+    st.markdown('<div class="section-title">👨‍💼 CA Sahab - 24x7 Assistant</div>', unsafe_allow_html=True)
+    st.info("💡 Apna GST, Income Tax, ya Business ka koi bhi sawal puchiye. Likh kar ya Mic daba kar bol kar!")
+
+    # Chat history set karna taaki purani baatein yaad rahe
+    if "ca_history" not in st.session_state:
+        st.session_state.ca_history = [
+            {"role": "assistant", "text": "Arre bhai! Main hoon aapka apna CA Sahab. Boliye, aaj GST, ITR ya business me kya madad karu aapki?"}
+        ]
+
+    # Screen par purani chat dikhana
+    for msg in st.session_state.ca_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["text"])
+
+    # Neeche Text Input aur Voice Input dono ke dabbe
+    col_mic, col_text = st.columns([1, 5])
+    
+    with col_mic:
+        ca_audio = st.audio_input("Bol ke puchiye", label_visibility="collapsed")
+    with col_text:
+        ca_text = st.chat_input("Likh ke puchiye...")
+
+    # Logic: Agar user ne type kiya YA audio bheja
+    prompt_text = None
+    has_audio = False
+
+    if ca_text:
+        prompt_text = ca_text
+    elif ca_audio:
+        prompt_text = "Neeche di gayi audio ko dhyan se suno aur mere sawal ka jawab do."
+        has_audio = True
+
+    if prompt_text:
+        # User ka message screen par dikhana
+        display_msg = ca_text if ca_text else "🎤 *Voice message bheja gaya...*"
+        st.session_state.ca_history.append({"role": "user", "text": display_msg})
+        with st.chat_message("user"):
+            st.markdown(display_msg)
+
+        # AI (CA Sahab) ka dimaag chalana
+        with st.chat_message("assistant"):
+            with st.spinner("CA Sahab file check kar rahe hain..."):
+                # CA Sahab ki Personality (System Prompt)
+                system_prompt = """
+                Tu ek expert Indian Chartered Accountant hai jiska naam 'CA Sahab' hai. 
+                Tu GST, Income Tax, Tally, aur Business Accounting ka master hai. 
+                Tera baat karne ka tarika ekdum friendly, respectful, aur Indian CA jaisa hona chahiye. 
+                Hamesha Hinglish (Hindi written in English alphabet) me jawab dena jisse local businessman ko samajh aaye. 
+                Agar sawaal samajh na aaye toh aaram se dubara puch lena.
+                """
+                
+                # Payload ready karna
+                contents = [system_prompt, prompt_text]
+                if has_audio:
+                    contents.append(types.Part.from_bytes(data=ca_audio.getvalue(), mime_type='audio/wav'))
+
+               try:
+                    # Gemini se jawab maangna
+                    resp = ai_client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=contents
+                    )
+                    reply = resp.text
+                    st.markdown(reply)
+                    
+                    # Jawab ko history me save karna
+                    st.session_state.ca_history.append({"role": "assistant", "text": reply})
+                    
+                    # ─────────────────────────────────────────────
+                    # 🎙️ CA SAHAB KI AAWAZ (VOICE OUTPUT MAGIC)
+                    # ─────────────────────────────────────────────
+                    from gtts import gTTS
+                    import io
+                    
+                    # AI ke text me se markdown symbols (*, #) hata rahe hain taaki aawaz saaf aaye
+                    clean_reply = reply.replace("*", "").replace("#", "")
+                    
+                    # gTTS se aawaz generate karna ('hi' matlab Hindi accent)
+                    tts = gTTS(text=clean_reply, lang='hi', slow=False)
+                    audio_fp = io.BytesIO()
+                    tts.write_to_fp(audio_fp)
+                    audio_fp.seek(0)
+                    
+                    # Streamlit me audio player dikhana aur Auto-play karna
+                    st.audio(audio_fp, format='audio/mp3', autoplay=True)
+                    
+                except Exception as e:
+                    st.error(f"⚠️ CA Sahab abhi Client meeting me busy hain. (Error: {e})")
