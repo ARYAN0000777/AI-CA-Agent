@@ -1522,6 +1522,12 @@ with tab4:
     with ec1: st.markdown("""<div class="metric-card purple center"><span class="metric-icon">🏦</span><div class="metric-label">Target Format</div><div style="color:#A89EFF;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">Tally ERP 9</div></div>""", unsafe_allow_html=True)
     with ec2: st.markdown(f"""<div class="metric-card green center"><span class="metric-icon">📦</span><div class="metric-label">Compiled Batch</div><div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">{len(selected_invoices)} Records</div></div>""", unsafe_allow_html=True)
     with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">System Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">Ready for Link</div></div>""", unsafe_allow_html=True)
+
+ if len(selected_invoices) > 0:
+        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
+        st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
+
+
 # ══════════════════════════════════════════════
 # ⭐️ TAB 5 — 👨‍💼 ASK CA SAHAB (ULTIMATE STABLE VERSION) ⭐️
 # ══════════════════════════════════════════════
@@ -1606,7 +1612,4 @@ with tab5:
                             time.sleep(3) # Wait and retry
                         else:
                             st.error(f"⚠️ CA Sahab thoda busy hain. Error: {e}")
-    if len(selected_invoices) > 0:
-        st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
-        st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
-
+   
