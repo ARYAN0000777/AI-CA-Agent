@@ -353,7 +353,7 @@ with tab1:
                         }
                         """
                         ai_resp  = ai_client.models.generate_content(
-                            model='gemini-2.0-flash',
+                            model='gemini-1.5-flash',
                             contents=[img, prompt]
                         )
                         raw_text = ai_resp.text.strip().replace("```json", "").replace("```", "").strip()
@@ -452,7 +452,7 @@ with tab2:
                     }
                     """
                     resp       = ai_client.models.generate_content(
-                        model='gemini-2.0-flash',
+                        model='gemini-1.5-flash',
                         contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
                     )
                     clean_json = resp.text.strip().replace("```json", "").replace("```", "").strip()
