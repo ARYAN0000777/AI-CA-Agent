@@ -1527,81 +1527,34 @@ with tab4:
         st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
         st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
 
-# ══════════════════════════════════════════════
-# TAB 5 — 👨‍💼 ASK CA SAHAB
-# ══════════════════════════════════════════════
+# --- TAB 5: CA SAHAB (GROQ LLAMA 3.1 + VOICE OUTPUT) ---
 with tab5:
-    st.markdown('<div class="section-title">👨‍💼 CA Sahab - 24x7 Assistant</div>', unsafe_allow_html=True)
-    st.info("💡 Apna GST, Income Tax, ya Business ka koi bhi sawal puchiye. Likh kar ya Mic daba kar bol kar!")
-
-    if "ca_history" not in st.session_state:
-        st.session_state.ca_history = [
-            {"role": "assistant", "text": "Arre bhai! Main hoon aapka apna CA Sahab. Boliye, aaj GST, ITR ya business me kya madad karu aapki?"}
-        ]
-
-    for msg in st.session_state.ca_history:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["text"])
-
-    col_mic, col_text = st.columns([1, 5])
+    st.markdown('<div class="section-title">👨‍💼 CA Sahab Assistant (Llama 3.1)</div>', unsafe_allow_html=True)
+    if "ca_history" not in st.session_state: st.session_state.ca_history = [{"role": "assistant", "content": "Boliye bhai, aaj business aur tax me kya help chahiye?"}]
+    for m in st.session_state.ca_history:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
     
-    with col_mic:
-        ca_audio = st.audio_input("Bol ke puchiye", label_visibility="collapsed")
-    with col_text:
-        ca_text = st.chat_input("Likh ke puchiye...")
-
-    prompt_text = None
-    has_audio = False
-
-    if ca_text:
-        prompt_text = ca_text
-    elif ca_audio:
-        prompt_text = "Neeche di gayi audio ko dhyan se suno aur mere sawal ka jawab do."
-        has_audio = True
-
-    if prompt_text:
-        display_msg = ca_text if ca_text else "🎤 *Voice message bheja gaya...*"
-        st.session_state.ca_history.append({"role": "user", "text": display_msg})
-        with st.chat_message("user"):
-            st.markdown(display_msg)
-
+    query = st.chat_input("Puchiye...")
+    if query:
+        st.session_state.ca_history.append({"role": "user", "content": query})
+        with st.chat_message("user"): st.markdown(query)
         with st.chat_message("assistant"):
-            with st.spinner("CA Sahab file check kar rahe hain..."):
-                system_prompt = """
-                Tu ek expert Indian Chartered Accountant hai jiska naam 'CA Sahab' hai. 
-                Tu GST, Income Tax, Tally, aur Business Accounting ka master hai. 
-                Tera baat karne ka tarika ekdum friendly, respectful, aur Indian CA jaisa hona chahiye. 
-                Hamesha Hinglish (Hindi written in English alphabet) me jawab dena jisse local businessman ko samajh aaye. 
-                Agar sawaal samajh na aaye toh aaram se dubara puch lena.
-                """
-                
-                # Payload ready karna
-                max_retries = 3
-                for attempt in range(max_retries):
-                    try:
-                        # Logic: Use Groq for chat to avoid Gemini 503 limits
-                        res = groq_client.chat.completions.create(
-                            messages=[
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": prompt_text}
-                            ],
-                            model="llama-3.1-70b-versatile",
-                        )
-                        reply = res.choices[0].message.content
-                        st.markdown(reply)
-                        st.session_state.ca_history.append({"role": "assistant", "text": reply})
-                        
-                        # Voice Output (gTTS)
-                        clean_reply = reply.replace("*", "").replace("#", "")
-                        tts = gTTS(text=clean_reply, lang='hi', slow=False)
-                        audio_fp = io.BytesIO()
-                        tts.write_to_fp(audio_fp)
-                        audio_fp.seek(0)
-                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
-                        break
-                    except Exception as e:
-                        if attempt < max_retries - 1:
-                            time.sleep(3)
-                        else:
-                            st.error(f"⚠️ CA Sahab thoda busy hain. Error: {e}")
-                            break
+            for attempt in range(3):
+                try:
+                    # 🚀 GROQ LLAMA 3.1 FIX 🚀
+                    res = groq_client.chat.completions.create(
+                        messages=[{"role": "system", "content": "Tu expert Indian CA hai. Hinglish me friendly baat kar."}, {"role": "user", "content": query}],
+                        model="llama-3.1-70b-versatile"
+                    )
+                    ans = res.choices[0].message.content
+                    st.markdown(ans)
+                    st.session_state.ca_history.append({"role": "assistant", "content": ans})
+                    
+                    # 🎙️ AUDIO OUTPUT (gTTS)
+                    tts = gTTS(text=ans.replace("*","").replace("#",""), lang='hi', slow=False)
+                    af = io.BytesIO(); tts.write_to_fp(af); af.seek(0)
+                    st.audio(af, format='audio/mp3', autoplay=True)
+                    break
+                except Exception as e:
+                    if attempt < 2: time.sleep(5)
+                    else: st.error(f"CA Sahab is busy: {e}")
