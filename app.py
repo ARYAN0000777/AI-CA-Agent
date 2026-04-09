@@ -1522,50 +1522,91 @@ with tab4:
     with ec1: st.markdown("""<div class="metric-card purple center"><span class="metric-icon">🏦</span><div class="metric-label">Target Format</div><div style="color:#A89EFF;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">Tally ERP 9</div></div>""", unsafe_allow_html=True)
     with ec2: st.markdown(f"""<div class="metric-card green center"><span class="metric-icon">📦</span><div class="metric-label">Compiled Batch</div><div style="color:#6EE7B7;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">{len(selected_invoices)} Records</div></div>""", unsafe_allow_html=True)
     with ec3: st.markdown("""<div class="metric-card amber center"><span class="metric-icon">⚡</span><div class="metric-label">System Status</div><div style="color:#FCD34D;font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;">Ready for Link</div></div>""", unsafe_allow_html=True)
+# ══════════════════════════════════════════════
+# ⭐️ TAB 5 — 👨‍💼 ASK CA SAHAB (ULTIMATE STABLE VERSION) ⭐️
+# ══════════════════════════════════════════════
+with tab5:
+    st.markdown('<div class="section-title">👨‍💼 CA Sahab - 24x7 Assistant (Llama 3.3 Engine)</div>', unsafe_allow_html=True)
+    st.info("💡 Apna GST, Income Tax, ya Business ka koi bhi sawal puchiye. CA Sahab jawab bol kar sunayenge!")
 
+    # Chat History initialize karna
+    if "ca_history" not in st.session_state:
+        st.session_state.ca_history = [
+            {"role": "assistant", "text": "Arre Aryan bhai! Main hoon aapka apna CA Sahab. Boliye, aaj business me kya help chahiye?"}
+        ]
+
+    # Purani baatein dikhana
+    for msg in st.session_state.ca_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["text"])
+
+    # Input Options
+    col_mic, col_text = st.columns([1, 5])
+    with col_mic:
+        ca_audio = st.audio_input("Bol ke puchiye", label_visibility="collapsed")
+    with col_text:
+        ca_text = st.chat_input("Likh ke puchiye...")
+
+    prompt_text = None
+    has_audio = False
+
+    if ca_text:
+        prompt_text = ca_text
+    elif ca_audio:
+        prompt_text = "Aryan ne mic se message bheja hai, iska jawab Hinglish me do."
+        has_audio = True
+
+    if prompt_text:
+        display_msg = ca_text if ca_text else "🎤 *Voice message processing...*"
+        st.session_state.ca_history.append({"role": "user", "text": display_msg})
+        with st.chat_message("user"):
+            st.markdown(display_msg)
+
+        with st.chat_message("assistant"):
+            with st.spinner("CA Sahab file check kar rahe hain..."):
+                system_prompt = """
+                Tu ek expert Indian CA 'CA Sahab' hai. 
+                Tera kaam Aryan ko GST, Tax aur Business advice dena hai. 
+                Hamesha Hinglish (Hindi language in English letters) me jawab dena. 
+                Tera tone ekdum friendly aur desi hona chahiye.
+                """
+                
+                # 🚀 LLAMA 3.3 MASTER LOGIC WITH RETRIES 🚀
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        # Groq API Call
+                        res = groq_client.chat.completions.create(
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": prompt_text}
+                            ],
+                            model="llama-3.3-70b-versatile", # <--- Yeh sabse latest hai!
+                        )
+                        reply = res.choices[0].message.content
+                        st.markdown(reply)
+                        st.session_state.ca_history.append({"role": "assistant", "text": reply})
+                        
+                        # 🎙️ VOICE OUTPUT ENGINE (gTTS)
+                        clean_reply = reply.replace("*", "").replace("#", "")
+                        tts = gTTS(text=clean_reply, lang='hi', slow=False)
+                        audio_fp = io.BytesIO()
+                        tts.write_to_fp(audio_fp)
+                        audio_fp.seek(0)
+                        
+                        # Auto-play audio
+                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
+                        break # Success! Loop se bahar niklo
+                        
+                    except Exception as e:
+                        if "400" in str(e) or "decommissioned" in str(e):
+                            st.error("⚠️ Model update ho raha hai. Ek minute wait karein.")
+                            break
+                        elif attempt < max_retries - 1:
+                            time.sleep(3) # Wait and retry
+                        else:
+                            st.error(f"⚠️ CA Sahab thoda busy hain. Error: {e}")
     if len(selected_invoices) > 0:
         st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
         st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
 
-# ══════════════════════════════════════════════
-# TAB 5: CA SAHAB (LLAMA 3.1 + VOICE ENGINE)
-# ══════════════════════════════════════════════
-with tab5:
-    st.markdown("### 👨‍💼 Ask CA Sahab (Llama 3.1 - 70B)")
-    if "ca_history" not in st.session_state:
-        st.session_state.ca_history = [{"role": "assistant", "content": "Arre Aryan bhai! Boliye aaj business me kya help chahiye?"}]
-    
-    for m in st.session_state.ca_history:
-        with st.chat_message(m["role"]): st.markdown(m["content"])
-    
-    query = st.chat_input("Apna tax ya business sawal yahan likhein...")
-    if query:
-        st.session_state.ca_history.append({"role": "user", "content": query})
-        with st.chat_message("user"): st.markdown(query)
-        with st.chat_message("assistant"):
-            with st.spinner("CA Sahab soch rahe hain..."):
-                for attempt in range(3):
-                    try:
-                        # 🚀 LLAMA 3.1 70B MODEL 🚀
-                        response = groq_client.chat.completions.create(
-                            messages=[
-                                {"role": "system", "content": "You are CA Sahab, an expert Indian CA. Answer in Hinglish with a friendly, helpful tone."},
-                                {"role": "user", "content": query}
-                            ],
-                            model="llama-3.1-70b-versatile"
-                        )
-                        ans = response.choices[0].message.content
-                        st.markdown(ans)
-                        st.session_state.ca_history.append({"role": "assistant", "content": ans})
-                        
-                        # VOICE OUTPUT (gTTS)
-                        clean_ans = ans.replace("*","").replace("#","")
-                        tts = gTTS(text=clean_ans, lang='hi', slow=False)
-                        audio_fp = io.BytesIO()
-                        tts.write_to_fp(audio_fp)
-                        audio_fp.seek(0)
-                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
-                        break
-                    except Exception as e:
-                        if attempt < 2: time.sleep(5)
-                        else: st.error(f"CA Sahab is busy: {e}")
