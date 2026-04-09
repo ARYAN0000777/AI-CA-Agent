@@ -1527,34 +1527,45 @@ with tab4:
         st.markdown("""<br><div class="export-card"><span class="export-icon">📥</span><div class="export-title">Download XML Payload</div><div class="export-desc">Auto-creates ledgers, registers GST, and populates inventory seamlessly.</div></div><br>""", unsafe_allow_html=True)
         st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
 
-# --- TAB 5: CA SAHAB (GROQ LLAMA 3.1 + VOICE OUTPUT) ---
+# ══════════════════════════════════════════════
+# TAB 5: CA SAHAB (LLAMA 3.1 + VOICE ENGINE)
+# ══════════════════════════════════════════════
 with tab5:
-    st.markdown('<div class="section-title">👨‍💼 CA Sahab Assistant (Llama 3.1)</div>', unsafe_allow_html=True)
-    if "ca_history" not in st.session_state: st.session_state.ca_history = [{"role": "assistant", "content": "Boliye bhai, aaj business aur tax me kya help chahiye?"}]
+    st.markdown("### 👨‍💼 Ask CA Sahab (Llama 3.1 - 70B)")
+    if "ca_history" not in st.session_state:
+        st.session_state.ca_history = [{"role": "assistant", "content": "Arre Aryan bhai! Boliye aaj business me kya help chahiye?"}]
+    
     for m in st.session_state.ca_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
     
-    query = st.chat_input("Puchiye...")
+    query = st.chat_input("Apna tax ya business sawal yahan likhein...")
     if query:
         st.session_state.ca_history.append({"role": "user", "content": query})
         with st.chat_message("user"): st.markdown(query)
         with st.chat_message("assistant"):
-            for attempt in range(3):
-                try:
-                    # 🚀 GROQ LLAMA 3.1 FIX 🚀
-                    res = groq_client.chat.completions.create(
-                        messages=[{"role": "system", "content": "Tu expert Indian CA hai. Hinglish me friendly baat kar."}, {"role": "user", "content": query}],
-                        model="llama-3.1-70b-versatile"
-                    )
-                    ans = res.choices[0].message.content
-                    st.markdown(ans)
-                    st.session_state.ca_history.append({"role": "assistant", "content": ans})
-                    
-                    # 🎙️ AUDIO OUTPUT (gTTS)
-                    tts = gTTS(text=ans.replace("*","").replace("#",""), lang='hi', slow=False)
-                    af = io.BytesIO(); tts.write_to_fp(af); af.seek(0)
-                    st.audio(af, format='audio/mp3', autoplay=True)
-                    break
-                except Exception as e:
-                    if attempt < 2: time.sleep(5)
-                    else: st.error(f"CA Sahab is busy: {e}")
+            with st.spinner("CA Sahab soch rahe hain..."):
+                for attempt in range(3):
+                    try:
+                        # 🚀 LLAMA 3.1 70B MODEL 🚀
+                        response = groq_client.chat.completions.create(
+                            messages=[
+                                {"role": "system", "content": "You are CA Sahab, an expert Indian CA. Answer in Hinglish with a friendly, helpful tone."},
+                                {"role": "user", "content": query}
+                            ],
+                            model="llama-3.1-70b-versatile"
+                        )
+                        ans = response.choices[0].message.content
+                        st.markdown(ans)
+                        st.session_state.ca_history.append({"role": "assistant", "content": ans})
+                        
+                        # VOICE OUTPUT (gTTS)
+                        clean_ans = ans.replace("*","").replace("#","")
+                        tts = gTTS(text=clean_ans, lang='hi', slow=False)
+                        audio_fp = io.BytesIO()
+                        tts.write_to_fp(audio_fp)
+                        audio_fp.seek(0)
+                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
+                        break
+                    except Exception as e:
+                        if attempt < 2: time.sleep(5)
+                        else: st.error(f"CA Sahab is busy: {e}")
