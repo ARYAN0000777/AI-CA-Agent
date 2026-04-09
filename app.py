@@ -654,13 +654,12 @@ with tab3:
         st.dataframe(display_df[cols], use_container_width=True, hide_index=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # --- JADU WALA CODE (TEXT CLEANER) YAHAN BAHAR NIKAL DIYA ---
+        def clean_text(text):
+            if pd.isna(text) or text is None: return ""
+            return str(text).encode('latin-1', 'replace').decode('latin-1')
+
         def create_pdf_bill(bill_data):
-            # --- JADU WALA CODE (TEXT CLEANER) ---
-            # Yeh Hindi ya special characters ko '?' me badal dega taaki PDF crash na ho
-            def clean_text(text):
-                if pd.isna(text) or text is None: return ""
-                return str(text).encode('latin-1', 'replace').decode('latin-1')
-            
             # Saare inputs ko filter me se guzar lo
             c_vendor_name = clean_text(bill_data.get('vendor_name', 'Unknown'))
             c_vendor_address = clean_text(bill_data.get('vendor_address', 'N/A'))
