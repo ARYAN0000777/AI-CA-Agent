@@ -377,7 +377,7 @@ st.markdown(f"""
 tab1, tab2, tab3, tab4 = st.tabs(["📸 Vision Scanner", "🎙️ Voice Entry", "📊 Dashboard & PDF", "⚙️ Tally Sync"])
 
 # ══════════════════════════════════════════════
-# TAB 1 — SCAN & EDIT
+# TAB 1 — SCAN & EDIT (WITH AUTO-RETRY FIX)
 # ══════════════════════════════════════════════
 with tab1:
     col_upload, col_preview = st.columns([1, 1], gap="large")
@@ -391,6 +391,7 @@ with tab1:
             st.markdown('<div class="step-row"><div class="step-num">2</div><div class="step-label">Initiate Deep Extraction</div></div>', unsafe_allow_html=True)
             if st.button("🚀 Process with Gemini AI", use_container_width=True):
                 with st.spinner("Neural network analyzing document structure..."):
+                    import time
                     try:
                         img = Image.open(uploaded_file)
                         prompt = """
@@ -406,12 +407,28 @@ with tab1:
                           "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
                         }
                         """
-                        ai_resp = ai_client.models.generate_content(model='gemini-2.5-flash', contents=[img, prompt])
-                        raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
-                        st.session_state.scanned_data = json.loads(raw_text)
-                        st.rerun()
+                        
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                ai_resp = ai_client.models.generate_content(model='gemini-2.5-flash', contents=[img, prompt])
+                                raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
+                                st.session_state.scanned_data = json.loads(raw_text)
+                                st.rerun()
+                                break # Success hone pe loop se bahar
+                                
+                            except Exception as api_e:
+                                if "503" in str(api_e) or "high demand" in str(api_e).lower() or "429" in str(api_e):
+                                    if attempt < max_retries - 1:
+                                        st.warning(f"⏳ Server traffic is high. Auto-retrying in 3 seconds... (Attempt {attempt + 1}/{max_retries})")
+                                        time.sleep(3)
+                                    else:
+                                        st.error("❌ Servers are currently overloaded. Please try again after a minute.")
+                                else:
+                                    st.error(f"❌ API Error: {api_e}")
+                                    break
                     except Exception as e:
-                        st.error(f"❌ Extraction failed: {e}")
+                        st.error(f"❌ Image loading failed: {e}")
 
     with col_preview:
         if uploaded_file is not None:
