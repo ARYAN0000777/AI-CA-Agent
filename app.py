@@ -1529,87 +1529,64 @@ with tab4:
 
 
 # ══════════════════════════════════════════════
-# ⭐️ TAB 5 — 👨‍💼 ASK CA SAHAB (ULTIMATE STABLE VERSION) ⭐️
+# 👨‍💼 TAB 5 — THE EPIC CA SAHAB (HUMAN VIBE)
 # ══════════════════════════════════════════════
 with tab5:
-    st.markdown('<div class="section-title">👨‍💼 CA Sahab - 24x7 Assistant (Llama 3.3 Engine)</div>', unsafe_allow_html=True)
-    st.info("💡 Apna GST, Income Tax, ya Business ka koi bhi sawal puchiye. CA Sahab jawab bol kar sunayenge!")
+    st.markdown('<div class="section-title">👨‍💼 CA Sahab - Aapka Business Partner</div>', unsafe_allow_html=True)
 
-    # Chat History initialize karna
-    if "ca_history" not in st.session_state:
-        st.session_state.ca_history = [
-            {"role": "assistant", "text": "Arre Aryan bhai! Main hoon aapka apna CA Sahab. Boliye, aaj business me kya help chahiye?"}
-        ]
+    # Chat reset jugaad
+    if st.button("New Discussion 🔄"):
+        st.session_state.ca_history = []
+        st.session_state.last_query = ""
+        st.rerun()
 
-    # Purani baatein dikhana
+    if "ca_history" not in st.session_state or not st.session_state.ca_history:
+        st.session_state.ca_history = [{"role": "assistant", "text": "Arre Aryan bhai, swagat hai! Tension mat lo, CA Sahab aa gaye hain. Boliye, aaj kaunsa bada kaand... mera matlab hai, kaunsa bada business deal set karna hai? 😎"}]
+
     for msg in st.session_state.ca_history:
         with st.chat_message(msg["role"]):
-            st.markdown(msg["text"])
+            st.markdown(f'<div style="font-family: \'DM Sans\', sans-serif; font-size: 1rem;">{msg["text"]}</div>', unsafe_allow_html=True)
 
-    # Input Options
-    col_mic, col_text = st.columns([1, 5])
-    with col_mic:
-        ca_audio = st.audio_input("Bol ke puchiye", label_visibility="collapsed")
-    with col_text:
-        ca_text = st.chat_input("Likh ke puchiye...")
+    query = st.chat_input("Apna solid sawal yahan likho...")
+    
+    if query:
+        # Repeating answer fix
+        if "last_query" not in st.session_state or st.session_state.last_query != query:
+            st.session_state.last_query = query
+            st.session_state.ca_history.append({"role": "user", "text": query})
+            with st.chat_message("user"): st.markdown(query)
 
-    prompt_text = None
-    has_audio = False
-
-    if ca_text:
-        prompt_text = ca_text
-    elif ca_audio:
-        prompt_text = "Aryan ne mic se message bheja hai, iska jawab Hinglish me do."
-        has_audio = True
-
-    if prompt_text:
-        display_msg = ca_text if ca_text else "🎤 *Voice message processing...*"
-        st.session_state.ca_history.append({"role": "user", "text": display_msg})
-        with st.chat_message("user"):
-            st.markdown(display_msg)
-
-        with st.chat_message("assistant"):
-            with st.spinner("CA Sahab file check kar rahe hain..."):
-                system_prompt = """
-                Tu ek expert Indian CA 'CA Sahab' hai. 
-                Tera kaam Aryan ko GST, Tax aur Business advice dena hai. 
-                Hamesha Hinglish (Hindi language in English letters) me jawab dena. 
-                Tera tone ekdum friendly aur desi hona chahiye.
-                """
-                
-                # 🚀 LLAMA 3.3 MASTER LOGIC WITH RETRIES 🚀
-                max_retries = 3
-                for attempt in range(max_retries):
+            with st.chat_message("assistant"):
+                with st.spinner("CA Sahab dimaag laga rahe hain... 🧠"):
                     try:
-                        # Groq API Call
-                        res = groq_client.chat.completions.create(
+                        # 🚀 THE EPIC PROMPT 🚀
+                        system_instructions = """
+                        You are 'CA Sahab'. You are NOT a robot. You are a high-level, elite Indian Chartered Accountant who talks like a mentor and a friend.
+                        - Use 'Hinglish' (Hindi in English script).
+                        - Be confident, solid, and epic. Use words like 'Bhai', 'Bindass', 'Solid', 'System'.
+                        - Don't give boring textbook answers. Give practical, 'dhandha' oriented advice.
+                        - Keep it human. If the user asks something simple, reply with wit.
+                        - IMPORTANT: Never start your answer the same way. Be fresh!
+                        """
+                        
+                        response = groq_client.chat.completions.create(
                             messages=[
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": prompt_text}
+                                {"role": "system", "content": system_instructions},
+                                {"role": "user", "content": query}
                             ],
-                            model="llama-3.3-70b-versatile", # <--- Yeh sabse latest hai!
+                            model="llama-3.3-70b-versatile",
+                            temperature=0.85, # Creativity badha di!
+                            top_p=0.9,
+                            max_tokens=1024
                         )
-                        reply = res.choices[0].message.content
-                        st.markdown(reply)
-                        st.session_state.ca_history.append({"role": "assistant", "text": reply})
+                        ans = response.choices[0].message.content
+                        st.markdown(f'<div style="line-height: 1.6;">{ans}</div>', unsafe_allow_html=True)
+                        st.session_state.ca_history.append({"role": "assistant", "text": ans})
                         
-                        # 🎙️ VOICE OUTPUT ENGINE (gTTS)
-                        clean_reply = reply.replace("*", "").replace("#", "")
-                        tts = gTTS(text=clean_reply, lang='hi', slow=False)
-                        audio_fp = io.BytesIO()
-                        tts.write_to_fp(audio_fp)
-                        audio_fp.seek(0)
-                        
-                        # Auto-play audio
-                        st.audio(audio_fp, format='audio/mp3', autoplay=True)
-                        break # Success! Loop se bahar niklo
-                        
+                        # 🎙️ AUDIO OUTPUT
+                        clean_ans = ans.replace("*","").replace("#","").replace(":","")
+                        tts = gTTS(text=clean_ans, lang='hi')
+                        af = io.BytesIO(); tts.write_to_fp(af); af.seek(0)
+                        st.audio(af, format='audio/mp3', autoplay=True)
                     except Exception as e:
-                        if "400" in str(e) or "decommissioned" in str(e):
-                            st.error("⚠️ Model update ho raha hai. Ek minute wait karein.")
-                            break
-                        elif attempt < max_retries - 1:
-                            time.sleep(3) # Wait and retry
-                        else:
-                            st.error(f"⚠️ CA Sahab thoda busy hain. Error: {e}")
-   
+                        st.error(f"CA Sahab meeting mein hain: {e}")
