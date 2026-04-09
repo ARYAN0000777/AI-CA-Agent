@@ -11,7 +11,6 @@ import base64
 # ─────────────────────────────────────────────
 # 1. PAGE CONFIG & ULTRA-PREMIUM CLAUDE UI/UX
 # ─────────────────────────────────────────────
-# YAHAN MAIN SIDEBAR KO BY DEFAULT OPEN KAR DIYA HAI (initial_sidebar_state="expanded")
 st.set_page_config(page_title="KhataAI Pro", page_icon="⚡", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
@@ -72,7 +71,6 @@ html, body, .stApp {
   -moz-osx-font-smoothing: grayscale !important;
 }
 
-/* Kill Streamlit's default white flash */
 .stApp > header { background: transparent !important; }
 
 .block-container {
@@ -122,291 +120,63 @@ html, body, .stApp {
    SIDEBAR — ULTRA PREMIUM
 ══════════════════════════════════════════ */
 [data-testid="stSidebar"] {
-  background: linear-gradient(
-    180deg,
-    rgba(8,6,20,0.97) 0%,
-    rgba(10,8,24,0.95) 100%
-  ) !important;
+  background: linear-gradient(180deg, rgba(8,6,20,0.97) 0%, rgba(10,8,24,0.95) 100%) !important;
   border-right: 1px solid var(--glass-border) !important;
   backdrop-filter: blur(20px) !important;
   box-shadow: 4px 0 40px rgba(0,0,0,0.6) !important;
 }
 [data-testid="stSidebarNav"] { display: none !important; } 
-
-[data-testid="stSidebar"] > div:first-child {
-  padding: 2rem 1.4rem !important;
-}
-
-[data-testid="stSidebar"] h2 {
-  font-family: 'Syne', sans-serif !important;
-  font-size: 1.15rem !important;
-  font-weight: 700 !important;
-  color: #FFFFFF !important;
-  letter-spacing: -0.01em !important;
-  line-height: 1.3 !important;
-}
-
-/* Sidebar separator */
-[data-testid="stSidebar"] hr {
-  border: none !important;
-  border-top: 1px solid var(--border) !important;
-  margin: 1.2rem 0 !important;
-}
-
-/* Sidebar expander */
-[data-testid="stSidebar"] .streamlit-expanderHeader {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  color: var(--muted-2) !important;
-  font-size: 0.82rem !important;
-  font-weight: 500 !important;
-  padding: 0.65rem 1rem !important;
-  transition: var(--transition-fast) !important;
-}
-
-[data-testid="stSidebar"] .streamlit-expanderHeader:hover {
-  background: var(--bg-surface-2) !important;
-  border-color: var(--purple-border) !important;
-  color: #C4BEFF !important;
-}
-
-[data-testid="stSidebar"] .streamlit-expanderContent {
-  background: rgba(124,111,255,0.03) !important;
-  border: 1px solid var(--border) !important;
-  border-top: none !important;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important;
-  padding: 1rem !important;
-}
-
-/* Sidebar text inputs */
-[data-testid="stSidebar"] .stTextInput > div > div > input {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-xs) !important;
-  color: var(--text) !important;
-  font-size: 0.83rem !important;
-  padding: 8px 12px !important;
-  transition: var(--transition-fast) !important;
-}
-
-[data-testid="stSidebar"] .stTextInput > div > div > input:focus {
-  border-color: var(--purple-border-hover) !important;
-  box-shadow: 0 0 0 3px rgba(124,111,255,0.12) !important;
-  background: rgba(124,111,255,0.05) !important;
-}
+[data-testid="stSidebar"] > div:first-child { padding: 2rem 1.4rem !important; }
+[data-testid="stSidebar"] h2 { font-family: 'Syne', sans-serif !important; font-size: 1.15rem !important; font-weight: 700 !important; color: #FFFFFF !important; letter-spacing: -0.01em !important; line-height: 1.3 !important; }
+[data-testid="stSidebar"] hr { border: none !important; border-top: 1px solid var(--border) !important; margin: 1.2rem 0 !important; }
+[data-testid="stSidebar"] .streamlit-expanderHeader { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important; color: var(--muted-2) !important; font-size: 0.82rem !important; font-weight: 500 !important; padding: 0.65rem 1rem !important; transition: var(--transition-fast) !important; }
+[data-testid="stSidebar"] .streamlit-expanderHeader:hover { background: var(--bg-surface-2) !important; border-color: var(--purple-border) !important; color: #C4BEFF !important; }
+[data-testid="stSidebar"] .streamlit-expanderContent { background: rgba(124,111,255,0.03) !important; border: 1px solid var(--border) !important; border-top: none !important; border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; padding: 1rem !important; }
+[data-testid="stSidebar"] .stTextInput > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; font-size: 0.83rem !important; padding: 8px 12px !important; transition: var(--transition-fast) !important; }
+[data-testid="stSidebar"] .stTextInput > div > div > input:focus { border-color: var(--purple-border-hover) !important; box-shadow: 0 0 0 3px rgba(124,111,255,0.12) !important; background: rgba(124,111,255,0.05) !important; }
 
 /* ══════════════════════════════════════════
    TOP HEADER / HERO TOPBAR
 ══════════════════════════════════════════ */
-.khata-topbar {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 1.8rem 0 1.4rem;
-  position: relative; z-index: 10;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 2rem;
-  animation: fadeSlideDown 0.65s cubic-bezier(.22,.68,0,1.2) both;
-}
-@keyframes fadeSlideDown {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
+.khata-topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.8rem 0 1.4rem; position: relative; z-index: 10; border-bottom: 1px solid var(--border); margin-bottom: 2rem; animation: fadeSlideDown 0.65s cubic-bezier(.22,.68,0,1.2) both; }
+@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-16px); } to   { opacity: 1; transform: translateY(0); } }
 .khata-brand { display: flex; align-items: center; gap: 1rem; }
-
-.khata-logo {
-  width: 48px; height: 48px;
-  background: linear-gradient(140deg, #7C6FFF 0%, #4ECDAA 100%);
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.45rem;
-  box-shadow:
-    0 0 0 1px rgba(124,111,255,0.5),
-    0 0 0 4px rgba(124,111,255,0.10),
-    0 0 32px rgba(124,111,255,0.40),
-    inset 0 1px 0 rgba(255,255,255,0.2);
-  animation: logoPulse 4s ease-in-out infinite;
-  flex-shrink: 0;
-}
-@keyframes logoPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 4px rgba(124,111,255,0.10), 0 0 32px rgba(124,111,255,0.38), inset 0 1px 0 rgba(255,255,255,0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 1px rgba(124,111,255,0.7), 0 0 0 6px rgba(124,111,255,0.14), 0 0 52px rgba(124,111,255,0.60), inset 0 1px 0 rgba(255,255,255,0.25);
-  }
-}
-
-.khata-title {
-  font-family: 'Syne', sans-serif !important;
-  font-size: 1.7rem !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.02em !important;
-  background: linear-gradient(115deg, #FFFFFF 15%, #A89EFF 55%, #6EE7B7 100%);
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-  line-height: 1.15 !important;
-}
-
-.khata-sub {
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-weight: 400;
-  margin-top: 4px;
-  letter-spacing: 0.01em;
-}
-
-.khata-pill {
-  background: linear-gradient(135deg, rgba(124,111,255,0.18), rgba(0,214,143,0.10));
-  border: 1px solid rgba(124,111,255,0.30);
-  color: #B4ABFF;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 30px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  box-shadow: 0 2px 12px rgba(124,111,255,0.18);
-  backdrop-filter: blur(8px);
-}
+.khata-logo { width: 48px; height: 48px; background: linear-gradient(140deg, #7C6FFF 0%, #4ECDAA 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 4px rgba(124,111,255,0.10), 0 0 32px rgba(124,111,255,0.40), inset 0 1px 0 rgba(255,255,255,0.2); animation: logoPulse 4s ease-in-out infinite; flex-shrink: 0; }
+@keyframes logoPulse { 0%, 100% { box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 4px rgba(124,111,255,0.10), 0 0 32px rgba(124,111,255,0.38), inset 0 1px 0 rgba(255,255,255,0.2); } 50% { box-shadow: 0 0 0 1px rgba(124,111,255,0.7), 0 0 0 6px rgba(124,111,255,0.14), 0 0 52px rgba(124,111,255,0.60), inset 0 1px 0 rgba(255,255,255,0.25); } }
+.khata-title { font-family: 'Syne', sans-serif !important; font-size: 1.7rem !important; font-weight: 800 !important; letter-spacing: -0.02em !important; background: linear-gradient(115deg, #FFFFFF 15%, #A89EFF 55%, #6EE7B7 100%); -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; line-height: 1.15 !important; }
+.khata-sub { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-top: 4px; letter-spacing: 0.01em; }
+.khata-pill { background: linear-gradient(135deg, rgba(124,111,255,0.18), rgba(0,214,143,0.10)); border: 1px solid rgba(124,111,255,0.30); color: #B4ABFF; font-size: 0.7rem; font-weight: 700; padding: 5px 14px; border-radius: 30px; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 2px 12px rgba(124,111,255,0.18); backdrop-filter: blur(8px); }
 
 /* ══════════════════════════════════════════
    TABS
 ══════════════════════════════════════════ */
-.stTabs [data-baseweb="tab-list"] {
-  gap: 4px !important;
-  background: rgba(255,255,255,0.028) !important;
-  border-radius: 14px !important;
-  padding: 5px !important;
-  border: 1px solid var(--border) !important;
-  position: relative; z-index: 5;
-  backdrop-filter: blur(12px) !important;
-}
-.stTabs [data-baseweb="tab"] {
-  background: transparent !important;
-  border-radius: 10px !important;
-  color: var(--muted-2) !important;
-  font-weight: 500 !important;
-  font-size: 0.86rem !important;
-  padding: 9px 22px !important;
-  border: none !important;
-  transition: var(--transition-fast) !important;
-  position: relative;
-}
-.stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
-  color: #C4BEFF !important;
-  background: rgba(124,111,255,0.07) !important;
-}
-.stTabs [aria-selected="true"] {
-  background: linear-gradient(135deg,
-    rgba(124,111,255,0.22) 0%,
-    rgba(0,214,143,0.10) 100%
-  ) !important;
-  color: #D0CBFF !important;
-  font-weight: 600 !important;
-  box-shadow: 0 2px 16px rgba(124,111,255,0.18), inset 0 1px 0 rgba(255,255,255,0.08) !important;
-  border: 1px solid rgba(124,111,255,0.22) !important;
-}
-/* Tab content panel */
-.stTabs [data-baseweb="tab-panel"] {
-  padding-top: 1.8rem !important;
-}
+.stTabs [data-baseweb="tab-list"] { gap: 4px !important; background: rgba(255,255,255,0.028) !important; border-radius: 14px !important; padding: 5px !important; border: 1px solid var(--border) !important; position: relative; z-index: 5; backdrop-filter: blur(12px) !important; }
+.stTabs [data-baseweb="tab"] { background: transparent !important; border-radius: 10px !important; color: var(--muted-2) !important; font-weight: 500 !important; font-size: 0.86rem !important; padding: 9px 22px !important; border: none !important; transition: var(--transition-fast) !important; position: relative; }
+.stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) { color: #C4BEFF !important; background: rgba(124,111,255,0.07) !important; }
+.stTabs [aria-selected="true"] { background: linear-gradient(135deg, rgba(124,111,255,0.22) 0%, rgba(0,214,143,0.10) 100%) !important; color: #D0CBFF !important; font-weight: 600 !important; box-shadow: 0 2px 16px rgba(124,111,255,0.18), inset 0 1px 0 rgba(255,255,255,0.08) !important; border: 1px solid rgba(124,111,255,0.22) !important; }
+.stTabs [data-baseweb="tab-panel"] { padding-top: 1.8rem !important; }
 
 /* ══════════════════════════════════════════
    METRIC CARDS — GLASSMORPHISM
 ══════════════════════════════════════════ */
-.metric-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.6rem 1.7rem;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  transition: var(--transition-medium);
-  animation: cardReveal 0.55s cubic-bezier(.22,.68,0,1.2) both;
-  cursor: default;
-}
-
-/* Noise texture overlay */
-.metric-card::after {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-/* Top accent bar */
-.metric-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 2px;
-  transition: opacity 0.3s ease;
-  opacity: 0.9;
-}
+.metric-card { background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.6rem 1.7rem; position: relative; overflow: hidden; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: var(--transition-medium); animation: cardReveal 0.55s cubic-bezier(.22,.68,0,1.2) both; cursor: default; }
+.metric-card::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); border-radius: inherit; pointer-events: none; opacity: 0.6; }
+.metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: opacity 0.3s ease; opacity: 0.9; }
 .metric-card.purple::before { background: linear-gradient(90deg, #7C6FFF, #A89EFF, #7C6FFF); background-size: 200% 100%; animation: shimmer 3s linear infinite; }
 .metric-card.green::before  { background: linear-gradient(90deg, #00D68F, #6EE7B7, #00D68F); background-size: 200% 100%; animation: shimmer 3.5s linear infinite; }
 .metric-card.amber::before  { background: linear-gradient(90deg, #FFB547, #FCD34D, #FFB547); background-size: 200% 100%; animation: shimmer 4s linear infinite; }
-
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-
-/* Hover states */
-.metric-card:hover {
-  transform: translateY(-5px) scale(1.008);
-  border-color: var(--border-hover);
-}
-.metric-card.purple:hover {
-  box-shadow: 0 20px 60px rgba(124,111,255,0.18), 0 0 0 1px rgba(124,111,255,0.22);
-  border-color: rgba(124,111,255,0.38) !important;
-  background: rgba(12,10,30,0.70);
-}
-.metric-card.green:hover {
-  box-shadow: 0 20px 60px rgba(0,214,143,0.14), 0 0 0 1px rgba(0,214,143,0.22);
-  border-color: rgba(0,214,143,0.35) !important;
-  background: rgba(8,22,18,0.68);
-}
-.metric-card.amber:hover {
-  box-shadow: 0 20px 60px rgba(255,181,71,0.13), 0 0 0 1px rgba(255,181,71,0.22);
-  border-color: rgba(255,181,71,0.35) !important;
-  background: rgba(22,16,6,0.68);
-}
-
-/* Inner glow blobs */
+.metric-card:hover { transform: translateY(-5px) scale(1.008); border-color: var(--border-hover); }
+.metric-card.purple:hover { box-shadow: 0 20px 60px rgba(124,111,255,0.18), 0 0 0 1px rgba(124,111,255,0.22); border-color: rgba(124,111,255,0.38) !important; background: rgba(12,10,30,0.70); }
+.metric-card.green:hover { box-shadow: 0 20px 60px rgba(0,214,143,0.14), 0 0 0 1px rgba(0,214,143,0.22); border-color: rgba(0,214,143,0.35) !important; background: rgba(8,22,18,0.68); }
+.metric-card.amber:hover { box-shadow: 0 20px 60px rgba(255,181,71,0.13), 0 0 0 1px rgba(255,181,71,0.22); border-color: rgba(255,181,71,0.35) !important; background: rgba(22,16,6,0.68); }
 .metric-card.purple { background-image: radial-gradient(ellipse at top right, rgba(124,111,255,0.09) 0%, transparent 60%); }
 .metric-card.green  { background-image: radial-gradient(ellipse at top right, rgba(0,214,143,0.08) 0%, transparent 60%); }
 .metric-card.amber  { background-image: radial-gradient(ellipse at top right, rgba(255,181,71,0.07) 0%, transparent 60%); }
-
-@keyframes cardReveal {
-  from { opacity: 0; transform: translateY(22px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.metric-icon {
-  font-size: 1.55rem; margin-bottom: 0.9rem;
-  display: inline-block;
-  filter: drop-shadow(0 0 8px currentColor);
-}
-.metric-label {
-  font-size: 0.68rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.10em;
-  margin-bottom: 0.4rem;
-}
-.metric-value {
-  font-family: 'Syne', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
+@keyframes cardReveal { from { opacity: 0; transform: translateY(22px) scale(0.96); } to   { opacity: 1; transform: translateY(0) scale(1); } }
+.metric-icon { font-size: 1.55rem; margin-bottom: 0.9rem; display: inline-block; filter: drop-shadow(0 0 8px currentColor); }
+.metric-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.10em; margin-bottom: 0.4rem; }
+.metric-value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; color: #FFFFFF; line-height: 1; letter-spacing: -0.02em; }
 .metric-value.purple { color: #B4ABFF; text-shadow: 0 0 24px rgba(124,111,255,0.5); }
 .metric-value.green  { color: #6EE7B7; text-shadow: 0 0 24px rgba(0,214,143,0.4); }
 .metric-value.amber  { color: #FCD34D; text-shadow: 0 0 24px rgba(255,181,71,0.4); }
@@ -414,529 +184,92 @@ html, body, .stApp {
 /* ══════════════════════════════════════════
    FORM INPUTS — GLOBAL
 ══════════════════════════════════════════ */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stNumberInput > div > div > input {
-  background: rgba(255,255,255,0.034) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-xs) !important;
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: 0.875rem !important;
-  transition: var(--transition-fast) !important;
-  caret-color: var(--purple) !important;
-}
-
-.stTextInput > div > div > input::placeholder,
-.stTextArea > div > div > textarea::placeholder { color: var(--muted) !important; }
-
-.stTextInput > div > div > input:hover,
-.stTextArea > div > div > textarea:hover,
-.stNumberInput > div > div > input:hover {
-  border-color: var(--border-hover) !important;
-  background: rgba(255,255,255,0.042) !important;
-}
-
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus,
-.stNumberInput > div > div > input:focus {
-  border-color: rgba(124,111,255,0.55) !important;
-  box-shadow: 0 0 0 4px rgba(124,111,255,0.10), 0 0 16px rgba(124,111,255,0.08) !important;
-  background: rgba(124,111,255,0.045) !important;
-  outline: none !important;
-}
-
-/* Selectbox & Multiselect */
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
-  background: rgba(255,255,255,0.034) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-xs) !important;
-  color: var(--text) !important;
-  transition: var(--transition-fast) !important;
-}
-
-.stSelectbox > div > div:hover,
-.stMultiSelect > div > div:hover {
-  border-color: var(--border-hover) !important;
-}
-
-/* Dropdown menu */
-[data-baseweb="popover"], [data-baseweb="menu"] {
-  background: rgba(14,12,28,0.97) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: var(--radius-sm) !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6) !important;
-}
-[data-baseweb="option"]:hover, [data-baseweb="option"][aria-selected="true"] {
-  background: var(--purple-dim) !important;
-}
-
-/* Input labels */
-.stTextInput label, .stNumberInput label, .stTextArea label,
-.stSelectbox label, .stMultiSelect label, .stRadio label {
-  color: var(--muted-2) !important;
-  font-size: 0.8rem !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.02em !important;
-}
-
-/* ══════════════════════════════════════════
-   FILE UPLOADER & AUDIO INPUT
-══════════════════════════════════════════ */
-.stFileUploader > div,
-div[data-testid="stAudioInput"] > div {
-  background: rgba(124,111,255,0.035) !important;
-  border: 2px dashed rgba(124,111,255,0.22) !important;
-  border-radius: var(--radius) !important;
-  transition: var(--transition-medium) !important;
-  padding: 2rem !important;
-}
-
-.stFileUploader > div:hover,
-div[data-testid="stAudioInput"] > div:hover {
-  border-color: rgba(124,111,255,0.55) !important;
-  background: rgba(124,111,255,0.065) !important;
-  box-shadow: 0 0 0 4px rgba(124,111,255,0.07), inset 0 0 32px rgba(124,111,255,0.04) !important;
-}
-
-/* Upload zone text */
+.stTextInput > div > div > input, .stTextArea > div > div > textarea, .stNumberInput > div > div > input { background: rgba(255,255,255,0.034) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; font-size: 0.875rem !important; transition: var(--transition-fast) !important; caret-color: var(--purple) !important; }
+.stTextInput > div > div > input::placeholder, .stTextArea > div > div > textarea::placeholder { color: var(--muted) !important; }
+.stTextInput > div > div > input:hover, .stTextArea > div > div > textarea:hover, .stNumberInput > div > div > input:hover { border-color: var(--border-hover) !important; background: rgba(255,255,255,0.042) !important; }
+.stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus, .stNumberInput > div > div > input:focus { border-color: rgba(124,111,255,0.55) !important; box-shadow: 0 0 0 4px rgba(124,111,255,0.10), 0 0 16px rgba(124,111,255,0.08) !important; background: rgba(124,111,255,0.045) !important; outline: none !important; }
+.stSelectbox > div > div, .stMultiSelect > div > div { background: rgba(255,255,255,0.034) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; color: var(--text) !important; transition: var(--transition-fast) !important; }
+.stSelectbox > div > div:hover, .stMultiSelect > div > div:hover { border-color: var(--border-hover) !important; }
+[data-baseweb="popover"], [data-baseweb="menu"] { background: rgba(14,12,28,0.97) !important; border: 1px solid var(--glass-border) !important; border-radius: var(--radius-sm) !important; backdrop-filter: blur(20px) !important; box-shadow: 0 24px 60px rgba(0,0,0,0.6) !important; }
+[data-baseweb="option"]:hover, [data-baseweb="option"][aria-selected="true"] { background: var(--purple-dim) !important; }
+.stTextInput label, .stNumberInput label, .stTextArea label, .stSelectbox label, .stMultiSelect label, .stRadio label { color: var(--muted-2) !important; font-size: 0.8rem !important; font-weight: 500 !important; letter-spacing: 0.02em !important; }
+.stFileUploader > div, div[data-testid="stAudioInput"] > div { background: rgba(124,111,255,0.035) !important; border: 2px dashed rgba(124,111,255,0.22) !important; border-radius: var(--radius) !important; transition: var(--transition-medium) !important; padding: 2rem !important; }
+.stFileUploader > div:hover, div[data-testid="stAudioInput"] > div:hover { border-color: rgba(124,111,255,0.55) !important; background: rgba(124,111,255,0.065) !important; box-shadow: 0 0 0 4px rgba(124,111,255,0.07), inset 0 0 32px rgba(124,111,255,0.04) !important; }
 .stFileUploader label { color: var(--muted-2) !important; font-size: 0.85rem !important; }
 
 /* ══════════════════════════════════════════
    BUTTONS — PRIMARY
 ══════════════════════════════════════════ */
-div.stButton > button {
-  background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important;
-  color: #FFFFFF !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 11px 26px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
-  letter-spacing: 0.01em !important;
-  width: 100% !important;
-  cursor: pointer !important;
-  position: relative !important;
-  overflow: hidden !important;
-  transition: var(--transition-bounce) !important;
-  box-shadow:
-    0 4px 20px rgba(124,111,255,0.35),
-    0 1px 0 rgba(255,255,255,0.12) inset !important;
-}
-
-div.stButton > button::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 60%);
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-div.stButton > button:hover {
-  transform: translateY(-3px) scale(1.008) !important;
-  box-shadow:
-    0 10px 40px rgba(124,111,255,0.50),
-    0 0 0 1px rgba(124,111,255,0.30),
-    0 1px 0 rgba(255,255,255,0.18) inset !important;
-  background: linear-gradient(135deg, #8F83FF 0%, #6B5EF0 100%) !important;
-}
-
-div.stButton > button:active {
-  transform: translateY(-1px) scale(0.998) !important;
-  box-shadow: 0 4px 16px rgba(124,111,255,0.30) !important;
-}
-
-/* Logout / Danger buttons */
-div.stButton > button[kind="secondary"],
-div.stButton > button:has(span:-webkit-any-link) {
-  background: transparent !important;
-}
-
-[data-testid="stSidebar"] div.stButton > button {
-  background: rgba(239,68,68,0.08) !important;
-  color: #FCA5A5 !important;
-  border: 1px solid rgba(239,68,68,0.20) !important;
-  box-shadow: none !important;
-  font-weight: 500 !important;
-}
-
-[data-testid="stSidebar"] div.stButton > button:hover {
-  background: rgba(239,68,68,0.16) !important;
-  border-color: rgba(239,68,68,0.40) !important;
-  box-shadow: 0 4px 20px rgba(239,68,68,0.15) !important;
-  transform: translateY(-2px) scale(1.002) !important;
-}
-
-/* ══════════════════════════════════════════
-   DOWNLOAD BUTTON — GREEN CTA
-══════════════════════════════════════════ */
-div.stDownloadButton > button {
-  background: linear-gradient(135deg, #00D68F 0%, #00A86B 100%) !important;
-  color: #ffffff !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 13px 28px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-weight: 700 !important;
-  font-size: 0.9rem !important;
-  letter-spacing: 0.01em !important;
-  width: 100% !important;
-  position: relative !important;
-  overflow: hidden !important;
-  transition: var(--transition-bounce) !important;
-  box-shadow:
-    0 6px 28px rgba(0,214,143,0.35),
-    0 1px 0 rgba(255,255,255,0.18) inset !important;
-}
-
-div.stDownloadButton > button::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%);
-  pointer-events: none;
-}
-
-div.stDownloadButton > button:hover {
-  transform: translateY(-3px) scale(1.010) !important;
-  box-shadow:
-    0 14px 48px rgba(0,214,143,0.50),
-    0 0 0 1px rgba(0,214,143,0.35),
-    0 1px 0 rgba(255,255,255,0.22) inset !important;
-  background: linear-gradient(135deg, #1FDFA0 0%, #00BE7A 100%) !important;
-}
-
-div.stDownloadButton > button:active {
-  transform: translateY(0px) scale(0.996) !important;
-}
-
-/* ══════════════════════════════════════════
-   FORM SUBMIT BUTTONS
-══════════════════════════════════════════ */
-button[kind="primaryFormSubmit"],
-div.stFormSubmitButton > button {
-  background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important;
-  color: #FFFFFF !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  padding: 12px 26px !important;
-  font-weight: 700 !important;
-  width: 100% !important;
-  transition: var(--transition-bounce) !important;
-  box-shadow: 0 4px 20px rgba(124,111,255,0.35) !important;
-}
-
-div.stFormSubmitButton > button:hover {
-  transform: translateY(-3px) scale(1.008) !important;
-  box-shadow: 0 12px 40px rgba(124,111,255,0.50) !important;
-}
+div.stButton > button { background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 11px 26px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important; font-size: 0.875rem !important; letter-spacing: 0.01em !important; width: 100% !important; cursor: pointer !important; position: relative !important; overflow: hidden !important; transition: var(--transition-bounce) !important; box-shadow: 0 4px 20px rgba(124,111,255,0.35), 0 1px 0 rgba(255,255,255,0.12) inset !important; }
+div.stButton > button::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, transparent 60%); border-radius: inherit; pointer-events: none; }
+div.stButton > button:hover { transform: translateY(-3px) scale(1.008) !important; box-shadow: 0 10px 40px rgba(124,111,255,0.50), 0 0 0 1px rgba(124,111,255,0.30), 0 1px 0 rgba(255,255,255,0.18) inset !important; background: linear-gradient(135deg, #8F83FF 0%, #6B5EF0 100%) !important; }
+div.stButton > button:active { transform: translateY(-1px) scale(0.998) !important; box-shadow: 0 4px 16px rgba(124,111,255,0.30) !important; }
+div.stButton > button[kind="secondary"], div.stButton > button:has(span:-webkit-any-link) { background: transparent !important; }
+[data-testid="stSidebar"] div.stButton > button { background: rgba(239,68,68,0.08) !important; color: #FCA5A5 !important; border: 1px solid rgba(239,68,68,0.20) !important; box-shadow: none !important; font-weight: 500 !important; }
+[data-testid="stSidebar"] div.stButton > button:hover { background: rgba(239,68,68,0.16) !important; border-color: rgba(239,68,68,0.40) !important; box-shadow: 0 4px 20px rgba(239,68,68,0.15) !important; transform: translateY(-2px) scale(1.002) !important; }
+div.stDownloadButton > button { background: linear-gradient(135deg, #00D68F 0%, #00A86B 100%) !important; color: #ffffff !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 13px 28px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; font-size: 0.9rem !important; letter-spacing: 0.01em !important; width: 100% !important; position: relative !important; overflow: hidden !important; transition: var(--transition-bounce) !important; box-shadow: 0 6px 28px rgba(0,214,143,0.35), 0 1px 0 rgba(255,255,255,0.18) inset !important; }
+div.stDownloadButton > button::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 55%); pointer-events: none; }
+div.stDownloadButton > button:hover { transform: translateY(-3px) scale(1.010) !important; box-shadow: 0 14px 48px rgba(0,214,143,0.50), 0 0 0 1px rgba(0,214,143,0.35), 0 1px 0 rgba(255,255,255,0.22) inset !important; background: linear-gradient(135deg, #1FDFA0 0%, #00BE7A 100%) !important; }
+div.stDownloadButton > button:active { transform: translateY(0px) scale(0.996) !important; }
+button[kind="primaryFormSubmit"], div.stFormSubmitButton > button { background: linear-gradient(135deg, #7C6FFF 0%, #5B4FE8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: var(--radius-sm) !important; padding: 12px 26px !important; font-weight: 700 !important; width: 100% !important; transition: var(--transition-bounce) !important; box-shadow: 0 4px 20px rgba(124,111,255,0.35) !important; }
+div.stFormSubmitButton > button:hover { transform: translateY(-3px) scale(1.008) !important; box-shadow: 0 12px 40px rgba(124,111,255,0.50) !important; }
 
 /* ══════════════════════════════════════════
    DATA EDITOR & DATAFRAME
 ══════════════════════════════════════════ */
-.stDataFrame, [data-testid="stDataFrame"] {
-  border-radius: var(--radius-sm) !important;
-  border: 1px solid var(--border) !important;
-  overflow: hidden !important;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.25) !important;
-  transition: border-color 0.25s ease !important;
-}
-
-.stDataFrame:hover, [data-testid="stDataFrame"]:hover {
-  border-color: var(--border-hover) !important;
-}
-
-/* Data grid header row */
-[data-testid="stDataFrame"] th,
-.stDataEditor th {
-  background: rgba(124,111,255,0.07) !important;
-  color: var(--muted-2) !important;
-  font-size: 0.72rem !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  border-bottom: 1px solid var(--border) !important;
-}
-
-[data-testid="stDataFrame"] td,
-.stDataEditor td {
-  color: var(--text) !important;
-  font-size: 0.84rem !important;
-  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
-}
-
-[data-testid="stDataFrame"] tr:hover td {
-  background: rgba(124,111,255,0.05) !important;
-}
+.stDataFrame, [data-testid="stDataFrame"] { border-radius: var(--radius-sm) !important; border: 1px solid var(--border) !important; overflow: hidden !important; box-shadow: 0 4px 32px rgba(0,0,0,0.25) !important; transition: border-color 0.25s ease !important; }
+.stDataFrame:hover, [data-testid="stDataFrame"]:hover { border-color: var(--border-hover) !important; }
+[data-testid="stDataFrame"] th, .stDataEditor th { background: rgba(124,111,255,0.07) !important; color: var(--muted-2) !important; font-size: 0.72rem !important; font-weight: 600 !important; letter-spacing: 0.06em !important; text-transform: uppercase !important; border-bottom: 1px solid var(--border) !important; }
+[data-testid="stDataFrame"] td, .stDataEditor td { color: var(--text) !important; font-size: 0.84rem !important; border-bottom: 1px solid rgba(255,255,255,0.04) !important; }
+[data-testid="stDataFrame"] tr:hover td { background: rgba(124,111,255,0.05) !important; }
 
 /* ══════════════════════════════════════════
-   EXPANDER PANELS
+   EXPANDER PANELS & OTHERS
 ══════════════════════════════════════════ */
-.streamlit-expanderHeader {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-sm) !important;
-  color: var(--muted-2) !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  transition: var(--transition-fast) !important;
-}
-
-.streamlit-expanderHeader:hover {
-  background: var(--bg-surface-2) !important;
-  border-color: var(--purple-border) !important;
-  color: #C4BEFF !important;
-}
-
-.streamlit-expanderContent {
-  background: rgba(124,111,255,0.025) !important;
-  border: 1px solid var(--border) !important;
-  border-top: none !important;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important;
-  padding: 1.2rem !important;
-}
-
-/* ══════════════════════════════════════════
-   ALERTS — INFO / SUCCESS / ERROR / WARNING
-══════════════════════════════════════════ */
-[data-testid="stAlert"],
-div[data-testid="stInfoMessage"],
-div[data-testid="stWarningMessage"],
-div[data-testid="stErrorMessage"],
-div[data-testid="stSuccessMessage"] {
-  border-radius: var(--radius-sm) !important;
-  border-width: 1px !important;
-  border-left-width: 3px !important;
-  backdrop-filter: blur(10px) !important;
-  font-size: 0.875rem !important;
-}
-
+.streamlit-expanderHeader { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important; color: var(--muted-2) !important; font-size: 0.875rem !important; font-weight: 500 !important; transition: var(--transition-fast) !important; }
+.streamlit-expanderHeader:hover { background: var(--bg-surface-2) !important; border-color: var(--purple-border) !important; color: #C4BEFF !important; }
+.streamlit-expanderContent { background: rgba(124,111,255,0.025) !important; border: 1px solid var(--border) !important; border-top: none !important; border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; padding: 1.2rem !important; }
+[data-testid="stAlert"], div[data-testid="stInfoMessage"], div[data-testid="stWarningMessage"], div[data-testid="stErrorMessage"], div[data-testid="stSuccessMessage"] { border-radius: var(--radius-sm) !important; border-width: 1px !important; border-left-width: 3px !important; backdrop-filter: blur(10px) !important; font-size: 0.875rem !important; }
 div[data-testid="stInfoMessage"]    { background: rgba(124,111,255,0.07) !important; border-color: rgba(124,111,255,0.35) !important; }
 div[data-testid="stSuccessMessage"] { background: rgba(0,214,143,0.07) !important;   border-color: rgba(0,214,143,0.35) !important; }
 div[data-testid="stErrorMessage"]   { background: rgba(239,68,68,0.07) !important;   border-color: rgba(239,68,68,0.35) !important; }
 div[data-testid="stWarningMessage"] { background: rgba(255,181,71,0.07) !important;  border-color: rgba(255,181,71,0.35) !important; }
-
-/* ══════════════════════════════════════════
-   RADIO BUTTONS
-══════════════════════════════════════════ */
-.stRadio > div {
-  display: flex !important;
-  gap: 0.5rem !important;
-  flex-wrap: wrap !important;
-}
-.stRadio > div > label {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-xs) !important;
-  padding: 8px 18px !important;
-  color: var(--muted-2) !important;
-  font-size: 0.85rem !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  transition: var(--transition-fast) !important;
-}
-.stRadio > div > label:hover {
-  border-color: var(--purple-border) !important;
-  color: #C4BEFF !important;
-  background: var(--purple-dim) !important;
-}
-.stRadio > div [aria-checked="true"] + label,
-.stRadio > div > label:has(input:checked) {
-  border-color: rgba(124,111,255,0.45) !important;
-  background: rgba(124,111,255,0.14) !important;
-  color: #D0CBFF !important;
-}
-
-/* ══════════════════════════════════════════
-   SPINNER
-══════════════════════════════════════════ */
-.stSpinner > div {
-  border-color: rgba(124,111,255,0.3) !important;
-  border-top-color: var(--purple) !important;
-}
-
-/* ══════════════════════════════════════════
-   LOGIN BOX — DEEP GLASSMORPHISM
-══════════════════════════════════════════ */
-.login-box {
-  background: rgba(8,6,20,0.70);
-  border: 1px solid rgba(124,111,255,0.22);
-  border-radius: 24px;
-  padding: 3rem 2.2rem;
-  text-align: center;
-  box-shadow:
-    0 0 0 1px rgba(124,111,255,0.10),
-    0 30px 80px rgba(0,0,0,0.65),
-    0 0 60px rgba(124,111,255,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  animation: cardReveal 0.6s cubic-bezier(.22,.68,0,1.2) both;
-}
-
-/* Login logo */
-.login-box .khata-logo {
-  width: 68px !important; height: 68px !important;
-  font-size: 2.2rem !important;
-  border-radius: 20px !important;
-  box-shadow:
-    0 0 0 1px rgba(124,111,255,0.5),
-    0 0 0 6px rgba(124,111,255,0.12),
-    0 0 40px rgba(124,111,255,0.45) !important;
-}
-
-/* ══════════════════════════════════════════
-   EXPORT CARD — GLASSMORPHISM CTA
-══════════════════════════════════════════ */
-.export-card {
-  background: linear-gradient(
-    135deg,
-    rgba(0,214,143,0.055) 0%,
-    rgba(124,111,255,0.055) 50%,
-    rgba(0,214,143,0.03) 100%
-  );
-  border: 1px solid rgba(0,214,143,0.20);
-  border-radius: 22px;
-  padding: 2.5rem;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(16px) !important;
-  box-shadow: 0 0 0 1px rgba(0,214,143,0.07), 0 16px 48px rgba(0,0,0,0.25);
-  transition: var(--transition-medium);
-}
-.export-card:hover {
-  border-color: rgba(0,214,143,0.35);
-  box-shadow: 0 0 0 1px rgba(0,214,143,0.12), 0 24px 64px rgba(0,214,143,0.12);
-  transform: translateY(-2px);
-}
-.export-card::before {
-  content: '';
-  position: absolute; top: -60px; right: -60px;
-  width: 180px; height: 180px;
-  background: radial-gradient(circle, rgba(0,214,143,0.12) 0%, transparent 65%);
-  pointer-events: none;
-}
+.stRadio > div { display: flex !important; gap: 0.5rem !important; flex-wrap: wrap !important; }
+.stRadio > div > label { background: var(--bg-surface) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-xs) !important; padding: 8px 18px !important; color: var(--muted-2) !important; font-size: 0.85rem !important; font-weight: 500 !important; cursor: pointer !important; transition: var(--transition-fast) !important; }
+.stRadio > div > label:hover { border-color: var(--purple-border) !important; color: #C4BEFF !important; background: var(--purple-dim) !important; }
+.stRadio > div [aria-checked="true"] + label, .stRadio > div > label:has(input:checked) { border-color: rgba(124,111,255,0.45) !important; background: rgba(124,111,255,0.14) !important; color: #D0CBFF !important; }
+.stSpinner > div { border-color: rgba(124,111,255,0.3) !important; border-top-color: var(--purple) !important; }
+.login-box { background: rgba(8,6,20,0.70); border: 1px solid rgba(124,111,255,0.22); border-radius: 24px; padding: 3rem 2.2rem; text-align: center; box-shadow: 0 0 0 1px rgba(124,111,255,0.10), 0 30px 80px rgba(0,0,0,0.65), 0 0 60px rgba(124,111,255,0.10), inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%); animation: cardReveal 0.6s cubic-bezier(.22,.68,0,1.2) both; }
+.login-box .khata-logo { width: 68px !important; height: 68px !important; font-size: 2.2rem !important; border-radius: 20px !important; box-shadow: 0 0 0 1px rgba(124,111,255,0.5), 0 0 0 6px rgba(124,111,255,0.12), 0 0 40px rgba(124,111,255,0.45) !important; }
+.export-card { background: linear-gradient(135deg, rgba(0,214,143,0.055) 0%, rgba(124,111,255,0.055) 50%, rgba(0,214,143,0.03) 100%); border: 1px solid rgba(0,214,143,0.20); border-radius: 22px; padding: 2.5rem; text-align: center; position: relative; overflow: hidden; backdrop-filter: blur(16px) !important; box-shadow: 0 0 0 1px rgba(0,214,143,0.07), 0 16px 48px rgba(0,0,0,0.25); transition: var(--transition-medium); }
+.export-card:hover { border-color: rgba(0,214,143,0.35); box-shadow: 0 0 0 1px rgba(0,214,143,0.12), 0 24px 64px rgba(0,214,143,0.12); transform: translateY(-2px); }
+.export-card::before { content: ''; position: absolute; top: -60px; right: -60px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(0,214,143,0.12) 0%, transparent 65%); pointer-events: none; }
 .export-card .export-icon { font-size: 2.4rem; display: block; margin-bottom: 0.6rem; }
-.export-card .export-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.1rem; font-weight: 700;
-  color: #FFFFFF; margin-bottom: 0.4rem;
-}
-.export-card .export-desc {
-  font-size: 0.82rem; color: var(--muted-2);
-  max-width: 320px; margin: 0 auto;
-}
-
-/* ══════════════════════════════════════════
-   CUSTOM UI COMPONENTS
-══════════════════════════════════════════ */
-.section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin-bottom: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  letter-spacing: -0.005em;
-}
-.section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--border), transparent);
-  margin-left: 0.5rem;
-}
-
-.fancy-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent);
-  margin: 2.2rem 0;
-}
-
-.step-row {
-  display: flex; align-items: center; gap: 0.85rem;
-  margin-bottom: 1.4rem;
-  animation: fadeSlideDown 0.45s ease both;
-}
-.step-num {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--purple-dim);
-  border: 1px solid var(--purple-border);
-  color: #B4ABFF;
-  font-weight: 700; font-size: 0.8rem;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(124,111,255,0.2);
-}
-.step-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.preview-frame {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: rgba(255,255,255,0.018);
-  transition: border-color 0.25s ease;
-}
+.export-card .export-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.4rem; }
+.export-card .export-desc { font-size: 0.82rem; color: var(--muted-2); max-width: 320px; margin: 0 auto; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1.1rem; display: flex; align-items: center; gap: 0.5rem; letter-spacing: -0.005em; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); margin-left: 0.5rem; }
+.fancy-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent); margin: 2.2rem 0; }
+.step-row { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.4rem; animation: fadeSlideDown 0.45s ease both; }
+.step-num { width: 30px; height: 30px; border-radius: 50%; background: var(--purple-dim); border: 1px solid var(--purple-border); color: #B4ABFF; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 12px rgba(124,111,255,0.2); }
+.step-label { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+.preview-frame { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: rgba(255,255,255,0.018); transition: border-color 0.25s ease; }
 .preview-frame:hover { border-color: var(--border-hover); }
-
-/* ══════════════════════════════════════════
-   SCROLLBAR STYLING
-══════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(124,111,255,0.25);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(124,111,255,0.45);
-}
-
-/* ══════════════════════════════════════════
-   TYPOGRAPHY HIERARCHY
-══════════════════════════════════════════ */
+::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(124,111,255,0.45); }
 h1, h2, h3 { font-family: 'Syne', sans-serif !important; color: #FFFFFF !important; letter-spacing: -0.02em !important; }
 h1 { font-size: 2rem !important; font-weight: 800 !important; }
 h2 { font-size: 1.4rem !important; font-weight: 700 !important; }
 h3 { font-size: 1.1rem !important; font-weight: 700 !important; }
 p, li, span { color: var(--text) !important; }
 strong, b { color: #FFFFFF !important; font-weight: 600 !important; }
-
-code {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 0.8rem !important;
-  background: rgba(124,111,255,0.12) !important;
-  border: 1px solid rgba(124,111,255,0.20) !important;
-  border-radius: 5px !important;
-  padding: 2px 7px !important;
-  color: #B4ABFF !important;
-}
-
-/* ══════════════════════════════════════════
-   MARKDOWN TEXT INSIDE FORMS
-══════════════════════════════════════════ */
+code { font-family: 'JetBrains Mono', monospace !important; font-size: 0.8rem !important; background: rgba(124,111,255,0.12) !important; border: 1px solid rgba(124,111,255,0.20) !important; border-radius: 5px !important; padding: 2px 7px !important; color: #B4ABFF !important; }
 .stMarkdown p, .stMarkdown span { color: var(--text) !important; }
 .stMarkdown strong { color: #FFFFFF !important; font-weight: 600 !important; }
-
-/* ══════════════════════════════════════════
-   COLUMN GAPS — breathing room
-══════════════════════════════════════════ */
 [data-testid="column"] { padding: 0 0.4rem !important; }
-
-/* ══════════════════════════════════════════
-   Z-INDEX & LAYERING CLEANUP
-══════════════════════════════════════════ */
 .main .block-container { position: relative; z-index: 1; }
-
 </style>
 <div class="bg-mesh"><span></span><span></span><span></span></div>
 """, unsafe_allow_html=True)
@@ -948,7 +281,7 @@ if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "admin_user" not in st.session_state: st.session_state.admin_user = "aryan"
 if "admin_pass" not in st.session_state: st.session_state.admin_pass = "admin123"
 if "company_name" not in st.session_state: st.session_state.company_name = "Stepout Studios"
-if "company_logo" not in st.session_state: st.session_state.company_logo = None # NEW: Logo state
+if "company_logo" not in st.session_state: st.session_state.company_logo = None
 
 if not st.session_state.logged_in:
     c1, c2, c3 = st.columns([1, 1.2, 1])
@@ -976,7 +309,6 @@ if not st.session_state.logged_in:
 # 3. SIDEBAR (THE 3-LINE MENU) & PROFILE SETTINGS
 # ─────────────────────────────────────────────
 with st.sidebar:
-    # Yahan check ho raha hai ki user ne apni logo daali hai ya nahi
     if st.session_state.company_logo:
         logo_display = f"<img src='{st.session_state.company_logo}' style='width: 80px; height: 80px; border-radius: 20px; object-fit: cover; box-shadow: 0 0 25px rgba(124,111,255,0.4); border: 2px solid rgba(124,111,255,0.3); margin-bottom: 1rem;'>"
     else:
@@ -993,7 +325,6 @@ with st.sidebar:
             new_pass = st.text_input("New Password", type="password", value=st.session_state.admin_pass)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("💾 Save Configuration", use_container_width=True):
-                # Save the new image in Base64 format so it fits in the HTML beautifully
                 if new_logo is not None:
                     base64_image = base64.b64encode(new_logo.getvalue()).decode("utf-8")
                     st.session_state.company_logo = f"data:image/png;base64,{base64_image}"
@@ -1144,31 +475,33 @@ with tab1:
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 2: 🎙️ VOICE BILLING
+# TAB 2: 🎙️ VOICE BILLING (UPDATED WITH GST FETCH & TAXES)
 # ══════════════════════════════════════════════
 with tab2:
     st.markdown('<div class="section-title">🎙️ Neural Voice Capture</div>', unsafe_allow_html=True)
-    st.info("💡 Pro Tip: Speak naturally. e.g., 'Sold 10 pipes to Manoj Enterprises at 50 rupees each' or 'Purchased 5 boxes from Sharma'.")
-    
+    st.info("💡 Pro Tip: Speak naturally. e.g., 'Sold 10 pipes to Manoj Enterprises at 50 rupees each with 18% GST. His GST is 07AAAA...'")
+
     audio_value = st.audio_input("Initialize Voice Recording", label_visibility="collapsed")
-    
+
     if audio_value is not None and st.session_state.voice_scanned_data is None:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 Transcribe & Generate", use_container_width=True):
-            with st.spinner("Running acoustic models and intent recognition..."):
-                import time # Isko code me sabse upar import list me daal dena agar nahi hai toh
-                
+            with st.spinner("Running acoustic models and calculating GST..."):
+                import time
+
                 max_retries = 3
                 for attempt in range(max_retries):
                     try:
                         audio_prompt = """
-                        Listen to this audio. You are an expert Accountant.
+                        Listen to this audio. You are an expert Indian CA.
                         Determine if the user is BUYING (Purchase) or SELLING (Sales).
-                        Extract the party name, items, quantities and rates. Calculate amounts automatically.
+                        Extract the party name, GST number (if mentioned), Address, items, quantities and rates.
+                        If GST percentage is mentioned, calculate the Base Price, CGST & SGST (if local) or IGST (if interstate).
                         Return ONLY a valid JSON:
                         {
-                          "voucher_type": "Purchase", 
-                          "vendor_name": "...", "base_price": 0.0, "total_amount": 0.0,
+                          "voucher_type": "Purchase",
+                          "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
+                          "base_price": 0.0, "cgst_amount": 0.0, "sgst_amount": 0.0, "igst_amount": 0.0, "total_amount": 0.0,
                           "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
                         }
                         """
@@ -1179,13 +512,13 @@ with tab2:
                         clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
                         st.session_state.voice_scanned_data = json.loads(clean_json)
                         st.rerun()
-                        break # Agar successfully chal gaya toh loop se bahar aa jao
-                        
+                        break
+
                     except Exception as e:
-                        if "503" in str(e) or "high demand" in str(e).lower():
+                        if "503" in str(e) or "high demand" in str(e).lower() or "429" in str(e):
                             if attempt < max_retries - 1:
-                                st.warning(f"⏳ Server is busy. Auto-retrying in a few seconds... (Attempt {attempt + 1}/{max_retries})")
-                                time.sleep(2) # 2 second wait karke dobara try karega
+                                st.warning(f"⏳ Server is busy or rate limited. Auto-retrying in a few seconds... (Attempt {attempt + 1}/{max_retries})")
+                                time.sleep(3)
                             else:
                                 st.error("❌ Servers are currently overloaded. Please try again after a minute.")
                         else:
@@ -1195,28 +528,99 @@ with tab2:
     if st.session_state.voice_scanned_data is not None:
         v_data = st.session_state.voice_scanned_data
         st.markdown('<div class="fancy-divider"></div><div class="section-title">✏️ Validate Audio Transcript</div>', unsafe_allow_html=True)
-        
+
         with st.form("edit_voice_form"):
+            st.markdown("**🧾 Transaction Details**")
             c0, c1, c2 = st.columns([1, 2, 1])
-            with c0: 
+            with c0:
                 v_type_val = v_data.get("voucher_type", "Sales")
                 v_idx = 1 if "sale" in v_type_val.lower() else 0
                 voice_type = st.selectbox("Operation", ["Purchase", "Sales"], index=v_idx)
             with c1: voice_vendor = st.text_input("Counterparty", value=v_data.get("vendor_name", "Local Party"))
             with c2: voice_date = st.text_input("Timestamp", value="2026-04-08")
-            
+
+            # --- API & MANUAL ENTRY SECTION ---
+            st.markdown("**🏢 Party Info (GST & Logistics)**")
+
+            # API Fetching Function (RapidAPI)
+            def fetch_gst_info(gstin):
+                import requests
+                # YAHAN APNI ASLI RAPIDAPI KEY DAALNA!
+                api_key = "2bc451a563msh61eee8c6a8a1ef0p1586c6jsnb626801c0c68"
+                url = "https://gst-verification.p.rapidapi.com/v1/verify"
+                querystring = {"gstin": gstin}
+                headers = {
+                    "X-RapidAPI-Key": api_key,
+                    "X-RapidAPI-Host": "gst-verification.p.rapidapi.com"
+                }
+                try:
+                    response = requests.get(url, headers=headers, params=querystring, timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        name = data.get('data', {}).get('tradeName', '')
+                        address = data.get('data', {}).get('pradr', {}).get('adr', '')
+                        return name, address
+                    return None, None
+                except Exception:
+                    return None, None
+
+            g1, g2 = st.columns([3, 1])
+            with g1:
+                if "current_gst" not in st.session_state:
+                    st.session_state.current_gst = v_data.get("gst_number", "")
+                voice_gst = st.text_input("GST Number", value=st.session_state.current_gst)
+
+            with g2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                fetch_btn = st.form_submit_button("🔍 Fetch API", use_container_width=True)
+
+            if "fetched_name" not in st.session_state: st.session_state.fetched_name = v_data.get("vendor_name", "")
+            if "fetched_address" not in st.session_state: st.session_state.fetched_address = v_data.get("vendor_address", "")
+
+            if fetch_btn and voice_gst:
+                with st.spinner("Fetching from GST Server..."):
+                    api_name, api_address = fetch_gst_info(voice_gst)
+                    if api_name:
+                        st.session_state.fetched_name = api_name
+                        st.session_state.fetched_address = api_address
+                        st.success(f"✅ Auto-filled details for: {api_name}")
+                    else:
+                        st.warning("⚠️ Could not fetch from API. Please enter manually.")
+
+            r1, r2 = st.columns(2)
+            with r1: final_vendor_name = st.text_input("Legal Name", value=st.session_state.fetched_name)
+            with r2: final_address = st.text_input("Registered Address", value=st.session_state.fetched_address)
+
+            voice_bank = st.text_input("Bank / Payment Details", value=v_data.get("bank_details", ""))
+
             st.markdown("**📦 Detected Inventory Items**")
             voice_edited_df = st.data_editor(pd.DataFrame(v_data.get("line_items", [])), num_rows="dynamic", use_container_width=True)
-            voice_total = st.number_input("Gross Amount ₹", value=float(v_data.get("total_amount", 0.0)))
-            
+
+            st.markdown("**💰 Financials & Taxation**")
+            t1, t2, t3, t4, t5 = st.columns(5)
+            with t1: v_base  = st.number_input("Base Value ₹", value=float(v_data.get("base_price", 0.0)))
+            with t2: v_cgst  = st.number_input("CGST ₹",       value=float(v_data.get("cgst_amount", 0.0)))
+            with t3: v_sgst  = st.number_input("SGST ₹",       value=float(v_data.get("sgst_amount", 0.0)))
+            with t4: v_igst  = st.number_input("IGST ₹",       value=float(v_data.get("igst_amount", 0.0)))
+            with t5: voice_total = st.number_input("Gross Amount ₹", value=float(v_data.get("total_amount", 0.0)))
+
             if st.form_submit_button("✅ Commit Voice Entry", use_container_width=True):
                 voice_final_data = {
-                    "voucher_type": voice_type, "vendor_name": voice_vendor, "invoice_date": voice_date,
+                    "voucher_type": voice_type, "vendor_name": final_vendor_name, "invoice_date": voice_date,
+                    "gst_number": voice_gst, "vendor_address": final_address, "bank_details": voice_bank,
+                    "base_price": v_base, "cgst_amount": v_cgst, "sgst_amount": v_sgst,
+                    "igst_amount": v_igst, "total_gst_amount": v_cgst + v_sgst + v_igst,
                     "total_amount": voice_total, "category": "Voice Entry",
                     "line_items": voice_edited_df.to_dict(orient='records')
                 }
                 supabase.table("invoices").insert(voice_final_data).execute()
+
+                # Clear states
                 st.session_state.voice_scanned_data = None
+                st.session_state.fetched_name = ""
+                st.session_state.fetched_address = ""
+                st.session_state.current_gst = ""
+
                 st.success("✅ Voice transaction secured!")
                 st.rerun()
 
