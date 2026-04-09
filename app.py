@@ -1050,46 +1050,32 @@ with tab1:
         if uploaded_file is not None and st.session_state.scanned_data is None:
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown('<div class="step-row"><div class="step-num">2</div><div class="step-label">Initiate Deep Extraction</div></div>', unsafe_allow_html=True)
-            if st.button("🚀 Process with Gemini AI", use_container_width=True):
-                with st.spinner("Neural network analyzing document structure..."):
-                    import time
-                    try:
-                        img = Image.open(uploaded_file)
-                        prompt = """
-                        You are an expert Data Extractor for an Indian CA.
-                        Extract details from the invoice including Vendor's Full Address and Bank Details.
-                        Determine if this is a "Purchase" invoice (goods bought) or "Sales" invoice (goods sold).
-                        Return ONLY a valid JSON:
-                        {
-                          "voucher_type": "Purchase", 
-                          "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
-                          "invoice_number": "...", "invoice_date": "DD-MM-YYYY",
-                          "base_price": 0.00, "cgst_amount": 0.00, "sgst_amount": 0.00, "igst_amount": 0.00, "total_amount": 0.00, "category": "...",
-                          "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
-                        }
-                        """
-                        max_retries = 5 # 🚀 Retries badha diye
-                        for attempt in range(max_retries):
-                            try:
-                                ai_resp = ai_client.models.generate_content(model='gemini-2.0-flash', contents=[img, prompt])
-                                raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
-                                st.session_state.scanned_data = json.loads(raw_text)
-                                st.rerun()
-                                break
-                            except Exception as api_e:
-                                if "503" in str(api_e) or "high demand" in str(api_e).lower() or "429" in str(api_e):
-                                    if attempt < max_retries - 1:
-                                        # 🚀 Exponential Backoff: 8s, 16s, 24s...
-                                        wait_time = (attempt + 1) * 8 
-                                        st.warning(f"⏳ Server traffic is high. Auto-retrying in {wait_time} seconds... (Attempt {attempt + 1}/{max_retries})")
-                                        time.sleep(wait_time)
-                                    else:
-                                        st.error("❌ Servers are currently overloaded. Please try again after a minute.")
-                                else:
-                                    st.error(f"❌ API Error: {api_e}")
-                                    break
-                    except Exception as e:
-                        st.error(f"❌ Extraction failed: {e}")
+           if st.button("🚀 Process with Gemini AI", use_container_width=True):
+    with st.spinner("Neural network analyzing document structure..."):
+        try:
+            img = Image.open(uploaded_file)
+            prompt = """
+            You are an expert Data Extractor for an Indian CA.
+            Extract details from the invoice including Vendor's Full Address and Bank Details.
+            Determine if this is a "Purchase" invoice (goods bought) or "Sales" invoice (goods sold).
+            Return ONLY a valid JSON:
+            {
+              "voucher_type": "Purchase", 
+              "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
+              "invoice_number": "...", "invoice_date": "DD-MM-YYYY",
+              "base_price": 0.00, "cgst_amount": 0.00, "sgst_amount": 0.00, "igst_amount": 0.00, "total_amount": 0.00, "category": "...",
+              "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
+            }
+            """
+            ai_resp = ai_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[img, prompt]
+            )
+            raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
+            st.session_state.scanned_data = json.loads(raw_text)
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Extraction failed: {e}")
 
     with col_preview:
         if uploaded_file is not None:
@@ -1163,44 +1149,30 @@ with tab2:
 
     if audio_value is not None and st.session_state.voice_scanned_data is None:
         if st.button("🚀 Transcribe & Generate", use_container_width=True):
-            with st.spinner("Running acoustic models and calculating GST..."):
-                import time
-                max_retries = 4 # 🚀 Retries set to 4
-                for attempt in range(max_retries):
-                    try:
-                        audio_prompt = """
-                        Listen to this audio. You are an expert Indian CA.
-                        Determine if the user is BUYING (Purchase) or SELLING (Sales).
-                        Extract the party name, GST number (if mentioned), Address, items, quantities and rates.
-                        If GST percentage is mentioned, calculate the Base Price, CGST & SGST (if local) or IGST (if interstate).
-                        Return ONLY a valid JSON:
-                        {
-                          "voucher_type": "Purchase",
-                          "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
-                          "base_price": 0.0, "cgst_amount": 0.0, "sgst_amount": 0.0, "igst_amount": 0.0, "total_amount": 0.0,
-                          "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
-                        }
-                        """
-                        resp = ai_client.models.generate_content(
-                            model='gemini-2.0-flash', # Model fixed for stability
-                            contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
-                        )
-                        clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
-                        st.session_state.voice_scanned_data = json.loads(clean_json)
-                        st.rerun()
-                        break
-                    except Exception as e:
-                        if "503" in str(e) or "high demand" in str(e).lower() or "429" in str(e):
-                            if attempt < max_retries - 1:
-                                # 🚀 Long Wait for Voice: 10s, 15s...
-                                wait_time = 10 + (attempt * 5) 
-                                st.warning(f"⏳ Server is busy. Auto-retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
-                                time.sleep(wait_time)
-                            else:
-                                st.error("❌ Servers are currently overloaded. Please try again after a minute.")
-                        else:
-                            st.error(f"❌ Audio processing error: {e}")
-                            break
+    with st.spinner("Running acoustic models and calculating GST..."):
+        try:
+            audio_prompt = """
+            Listen to this audio. You are an expert Indian CA.
+            Determine if the user is BUYING (Purchase) or SELLING (Sales).
+            Extract the party name, GST number (if mentioned), Address, items, quantities and rates.
+            If GST percentage is mentioned, calculate the Base Price, CGST & SGST (if local) or IGST (if interstate).
+            Return ONLY a valid JSON:
+            {
+              "voucher_type": "Purchase",
+              "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
+              "base_price": 0.0, "cgst_amount": 0.0, "sgst_amount": 0.0, "igst_amount": 0.0, "total_amount": 0.0,
+              "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
+            }
+            """
+            resp = ai_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
+            )
+            clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
+            st.session_state.voice_scanned_data = json.loads(clean_json)
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Audio processing error: {e}")
 
     if st.session_state.voice_scanned_data is not None:
         v_data = st.session_state.voice_scanned_data
