@@ -7,3 +7,4 @@ fpdf
 gTTS
 groq
 edge-tts
+google-generativeai>=0.8.0
