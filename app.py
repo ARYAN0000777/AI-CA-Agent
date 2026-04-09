@@ -1068,10 +1068,10 @@ with tab1:
                           "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
                         }
                         """
-                        max_retries = 3
+                        max_retries = 5 # 🚀 Retries badha diye
                         for attempt in range(max_retries):
                             try:
-                                ai_resp = ai_client.models.generate_content(model='gemini-2.5-flash', contents=[img, prompt])
+                                ai_resp = ai_client.models.generate_content(model='gemini-2.0-flash', contents=[img, prompt])
                                 raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
                                 st.session_state.scanned_data = json.loads(raw_text)
                                 st.rerun()
@@ -1079,8 +1079,10 @@ with tab1:
                             except Exception as api_e:
                                 if "503" in str(api_e) or "high demand" in str(api_e).lower() or "429" in str(api_e):
                                     if attempt < max_retries - 1:
-                                        st.warning(f"⏳ Server traffic is high. Auto-retrying in 3 seconds... (Attempt {attempt + 1}/{max_retries})")
-                                        time.sleep(3)
+                                        # 🚀 Exponential Backoff: 8s, 16s, 24s...
+                                        wait_time = (attempt + 1) * 8 
+                                        st.warning(f"⏳ Server traffic is high. Auto-retrying in {wait_time} seconds... (Attempt {attempt + 1}/{max_retries})")
+                                        time.sleep(wait_time)
                                     else:
                                         st.error("❌ Servers are currently overloaded. Please try again after a minute.")
                                 else:
@@ -1163,7 +1165,7 @@ with tab2:
         if st.button("🚀 Transcribe & Generate", use_container_width=True):
             with st.spinner("Running acoustic models and calculating GST..."):
                 import time
-                max_retries = 3
+                max_retries = 4 # 🚀 Retries set to 4
                 for attempt in range(max_retries):
                     try:
                         audio_prompt = """
@@ -1180,7 +1182,7 @@ with tab2:
                         }
                         """
                         resp = ai_client.models.generate_content(
-                            model='gemini-2.5-flash',
+                            model='gemini-2.0-flash', # Model fixed for stability
                             contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
                         )
                         clean_json = resp.text.strip().replace("```json","").replace("```","").strip()
@@ -1190,8 +1192,10 @@ with tab2:
                     except Exception as e:
                         if "503" in str(e) or "high demand" in str(e).lower() or "429" in str(e):
                             if attempt < max_retries - 1:
-                                st.warning(f"⏳ Server is busy. Auto-retrying... (Attempt {attempt + 1}/{max_retries})")
-                                time.sleep(3)
+                                # 🚀 Long Wait for Voice: 10s, 15s...
+                                wait_time = 10 + (attempt * 5) 
+                                st.warning(f"⏳ Server is busy. Auto-retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
+                                time.sleep(wait_time)
                             else:
                                 st.error("❌ Servers are currently overloaded. Please try again after a minute.")
                         else:
@@ -1287,7 +1291,7 @@ with tab2:
                 st.session_state.fetched_address = ""
                 st.session_state.current_gst = ""
                 st.success("✅ Voice transaction secured!")
-                st.rerun()
+                st.rerun() 
 
 # ══════════════════════════════════════════════
 # TAB 3 — ANALYTICS, MANAGE & PDF PRINT
