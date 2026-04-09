@@ -1585,7 +1585,7 @@ with tab5:
                                 {"role": "system", "content": system_prompt},
                                 {"role": "user", "content": prompt_text}
                             ],
-                            model="llama3-70b-8192",
+                            model="llama-3.1-70b-versatile",
                         )
                         reply = res.choices[0].message.content
                         st.markdown(reply)
