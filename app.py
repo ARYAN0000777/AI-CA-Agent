@@ -1534,52 +1534,122 @@ with tab4:
 
 
 # ══════════════════════════════════════════════
-# 👨‍💼 TAB 5 — THE EPIC CA SAHAB (HUMAN VIBE) - FIXED VERSION
+# 👨‍💼 TAB 5 — CA SAHAB WITH VOICE INPUT + MALE TTS
 # ══════════════════════════════════════════════
 with tab5:
+    import hashlib
+    import asyncio
+    import edge_tts
+
+    async def generate_male_voice(text: str) -> bytes:
+        """Microsoft ka solid male Hindi voice"""
+        voice = "hi-IN-MadhurNeural"  # Ekdam solid male voice
+        communicate = edge_tts.Communicate(text, voice)
+        audio_buffer = io.BytesIO()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_buffer.write(chunk["data"])
+        audio_buffer.seek(0)
+        return audio_buffer.read()
+
+    def get_male_audio(text: str) -> bytes:
+        """Sync wrapper for async TTS"""
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(generate_male_voice(text))
+            loop.close()
+            return result
+        except Exception as e:
+            return None
+
     st.markdown('<div class="section-title">👨‍💼 CA Sahab - Aapka Business Partner</div>', unsafe_allow_html=True)
 
-    # Chat reset jugaad
+    # Reset button
     if st.button("New Discussion 🔄"):
         st.session_state.ca_history = []
         st.session_state.last_query = ""
-        st.session_state.last_audio = None
+        st.session_state.last_audio_hash = ""
         st.rerun()
 
+    # Init history
     if "ca_history" not in st.session_state or not st.session_state.ca_history:
         st.session_state.ca_history = [{"role": "assistant", "text": "Arre Aryan bhai, swagat hai! Tension mat lo, CA Sahab aa gaye hain. Boliye, aaj kaunsa bada kaand... mera matlab hai, kaunsa bada business deal set karna hai? 😎"}]
 
+    # Chat history display
     for msg in st.session_state.ca_history:
         with st.chat_message(msg["role"]):
             st.markdown(f'<div style="font-family: \'DM Sans\', sans-serif; font-size: 1rem;">{msg["text"]}</div>', unsafe_allow_html=True)
 
-    query = st.chat_input("Apna solid sawal yahan likho...")
-    
-    if query:
-        # Repeating answer fix
-        if "last_query" not in st.session_state or st.session_state.last_query != query:
-            st.session_state.last_query = query
-            st.session_state.ca_history.append({"role": "user", "text": query})
-            with st.chat_message("user"): st.markdown(query)
+    # ── INPUT SECTION ──
+    st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🎤 Apna Sawal Puchho</div>', unsafe_allow_html=True)
+
+    input_mode = st.radio("Input Mode:", ["⌨️ Type", "🎙️ Voice"], horizontal=True)
+
+    final_query = None
+
+    # ── TEXT INPUT ──
+    if input_mode == "⌨️ Type":
+        final_query = st.chat_input("Apna solid sawal yahan likho...")
+
+    # ── VOICE INPUT ──
+    else:
+        st.info("🎙️ Mic press karo, apna sawal bolo, phir 'Transcribe' dabao")
+        voice_question = st.audio_input("Yahan bolo apna sawal:", label_visibility="collapsed")
+
+        if voice_question is not None:
+            if st.button("🔍 Transcribe & Ask CA Sahab", use_container_width=True):
+                with st.spinner("Awaaz sun raha hoon... 👂"):
+                    try:
+                        # Groq Whisper se transcribe
+                        transcription = groq_client.audio.transcriptions.create(
+                            file=("question.wav", voice_question.getvalue(), "audio/wav"),
+                            model="whisper-large-v3",
+                            language="hi",  # Hindi priority, English bhi handle karega
+                            response_format="text"
+                        )
+                        final_query = str(transcription).strip()
+                        st.success(f"✅ Suna mujhe: **{final_query}**")
+                    except Exception as e:
+                        st.error(f"❌ Transcription fail: {str(e)[:100]}")
+
+    # ── PROCESS QUERY ──
+    if final_query and final_query.strip():
+        # Duplicate prevention
+        if "last_query" not in st.session_state:
+            st.session_state.last_query = ""
+
+        if st.session_state.last_query != final_query.strip():
+            st.session_state.last_query = final_query.strip()
+            st.session_state.ca_history.append({"role": "user", "text": final_query})
+
+            with st.chat_message("user"):
+                st.markdown(final_query)
 
             with st.chat_message("assistant"):
                 with st.spinner("CA Sahab dimaag laga rahe hain... 🧠"):
                     try:
-                        # 🚀 THE EPIC PROMPT 🚀
                         system_instructions = """
                         You are 'CA Sahab'. You are NOT a robot. You are a high-level, elite Indian Chartered Accountant who talks like a mentor and a friend.
                         - Use 'Hinglish' (Hindi in English script).
                         - Be confident, solid, and epic. Use words like 'Bhai', 'Bindass', 'Solid', 'System'.
                         - Don't give boring textbook answers. Give practical, 'dhandha' oriented advice.
                         - Keep it human. If the user asks something simple, reply with wit.
-                        - IMPORTANT: Never start your answer the same way. Be fresh!
+                        - IMPORTANT: Never start your answer the same way. Be fresh every time!
                         """
-                        
+
+                        # Build full conversation history for context
+                        messages_for_api = [{"role": "system", "content": system_instructions}]
+                        for h in st.session_state.ca_history[:-1]:  # Exclude latest user msg (already added)
+                            messages_for_api.append({
+                                "role": h["role"] if h["role"] != "assistant" else "assistant",
+                                "content": h["text"]
+                            })
+                        messages_for_api.append({"role": "user", "content": final_query})
+
                         response = groq_client.chat.completions.create(
-                            messages=[
-                                {"role": "system", "content": system_instructions},
-                                {"role": "user", "content": query}
-                            ],
+                            messages=messages_for_api,
                             model="llama-3.3-70b-versatile",
                             temperature=0.85,
                             top_p=0.9,
@@ -1588,45 +1658,40 @@ with tab5:
                         ans = response.choices[0].message.content
                         st.markdown(f'<div style="line-height: 1.6;">{ans}</div>', unsafe_allow_html=True)
                         st.session_state.ca_history.append({"role": "assistant", "text": ans})
-                        
-                        # 🎙️ AUDIO OUTPUT - FIXED & ROBUST
+
+                        # ── MALE VOICE OUTPUT ──
                         st.markdown("---")
-                        st.markdown("**🔊 Suniye CA Sahab ke kehne mein...**")
-                        
-                        # Hash the response to check if it's different from last time
-                        import hashlib
+                        st.markdown("**🔊 CA Sahab bol rahe hain...**")
+
                         current_hash = hashlib.md5(ans.encode()).hexdigest()
                         if "last_audio_hash" not in st.session_state:
                             st.session_state.last_audio_hash = ""
-                        
-                        # Only generate audio if the answer is new
+
                         if st.session_state.last_audio_hash != current_hash:
-                            try:
-                                # Clean up text for TTS
-                                clean_ans = ans.replace("*","").replace("#","").replace(":","").replace("`","").strip()
-                                
-                                # Limit text length for TTS
-                                if len(clean_ans) > 2000:
-                                    clean_ans = clean_ans[:2000] + "..."
-                                
-                                # Generate speech with error handling
-                                tts = gTTS(text=clean_ans, lang='hi', slow=False)
-                                audio_buffer = io.BytesIO()
-                                
-                                try:
-                                    tts.write_to_fp(audio_buffer)
-                                    audio_buffer.seek(0)
-                                    
-                                    # Display audio player
-                                    st.audio(audio_buffer, format='audio/mp3', autoplay=False)
+                            with st.spinner("🎙️ Awaaz taiyaar ho rahi hai..."):
+                                # Clean text for TTS — remove markdown symbols
+                                clean_ans = ans.replace("*", "").replace("#", "").replace("`", "").replace("_", "").strip()
+                                if len(clean_ans) > 3000:
+                                    clean_ans = clean_ans[:3000] + "..."
+
+                                audio_bytes = get_male_audio(clean_ans)
+
+                                if audio_bytes and len(audio_bytes) > 1000:
+                                    st.audio(audio_bytes, format="audio/mp3", autoplay=False)
                                     st.session_state.last_audio_hash = current_hash
-                                    st.success("✅ Audio ready! Click play.")
-                                    
-                                except Exception as tts_write_error:
-                                    st.warning(f"⚠️ Audio generation partial issue: {str(tts_write_error)[:50]}. Text is above, but no audio playback.")
-                                    
-                            except Exception as tts_error:
-                                st.info(f"💡 gTTS temporary hiccup: Voice not available rn. But don't worry, answer toh sab samajh aaya na! 😄")
-                        
+                                    st.success("✅ Solid awaaz taiyaar! Play karo. 🎙️")
+                                else:
+                                    # Fallback to gTTS if edge_tts fails
+                                    try:
+                                        tts = gTTS(text=clean_ans[:2000], lang='hi', slow=False)
+                                        fallback_buffer = io.BytesIO()
+                                        tts.write_to_fp(fallback_buffer)
+                                        fallback_buffer.seek(0)
+                                        st.audio(fallback_buffer, format='audio/mp3', autoplay=False)
+                                        st.session_state.last_audio_hash = current_hash
+                                        st.info("🔊 Fallback voice use hua (edge_tts unavailable)")
+                                    except:
+                                        st.warning("⚠️ Voice abhi available nahi. Text padh lo bhai!")
+
                     except Exception as api_error:
-                        st.error(f"❌ CA Sahab ko connect nahi kar paye: {str(api_error)[:100]}")
+                        st.error(f"❌ CA Sahab ko connect nahi kar paye: {str(api_error)[:150]}")
