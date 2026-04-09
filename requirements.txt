@@ -6,3 +6,4 @@ Pillow
 fpdf
 gTTS
 groq
+edge-tts
