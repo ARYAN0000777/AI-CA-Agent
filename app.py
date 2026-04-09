@@ -625,7 +625,7 @@ with tab2:
                 st.rerun()
 
 # ══════════════════════════════════════════════
-# TAB 3 — ANALYTICS, MANAGE & PDF PRINT
+# TAB 3 — ANALYTICS, MANAGE & PDF PRINT (CRASH FIXED)
 # ══════════════════════════════════════════════
 with tab3:
     total_bills = len(db_data)
@@ -655,14 +655,30 @@ with tab3:
         st.markdown("<br>", unsafe_allow_html=True)
 
         def create_pdf_bill(bill_data):
+            # --- JADU WALA CODE (TEXT CLEANER) ---
+            # Yeh Hindi ya special characters ko '?' me badal dega taaki PDF crash na ho
+            def clean_text(text):
+                if pd.isna(text) or text is None: return ""
+                return str(text).encode('latin-1', 'replace').decode('latin-1')
+            
+            # Saare inputs ko filter me se guzar lo
+            c_vendor_name = clean_text(bill_data.get('vendor_name', 'Unknown'))
+            c_vendor_address = clean_text(bill_data.get('vendor_address', 'N/A'))
+            c_gst_number = clean_text(bill_data.get('gst_number', 'N/A'))
+            c_invoice_number = clean_text(bill_data.get('invoice_number', 'N/A'))
+            c_invoice_date = clean_text(bill_data.get('invoice_date', 'N/A'))
+            c_category = clean_text(bill_data.get('category', 'General'))
+            c_bank_details = clean_text(bill_data.get('bank_details', 'N/A'))
+            c_voucher_type = clean_text(bill_data.get('voucher_type', 'INVOICE')).upper()
+            c_comp_name = clean_text(st.session_state.company_name)
+
             pdf = FPDF(orientation='P', unit='mm', format='A4')
             pdf.add_page()
             
             pdf.rect(5, 5, 200, 287)
             
             pdf.set_font("Arial", 'B', 18)
-            v_type = bill_data.get('voucher_type', 'INVOICE').upper()
-            pdf.cell(190, 12, txt=f"TAX {v_type}", ln=True, align='C')
+            pdf.cell(190, 12, txt=f"TAX {c_voucher_type}", ln=True, align='C')
             pdf.line(5, 17, 205, 17)
             pdf.ln(5)
             
@@ -673,10 +689,10 @@ with tab3:
             pdf.set_font("Arial", '', 10)
             x_y_start = pdf.get_y()
             
-            pdf.multi_cell(100, 5, txt=f"Name: {bill_data.get('vendor_name', 'Unknown')}\nAddress: {bill_data.get('vendor_address', 'N/A')}\nGSTIN: {bill_data.get('gst_number', 'N/A')}")
+            pdf.multi_cell(100, 5, txt=f"Name: {c_vendor_name}\nAddress: {c_vendor_address}\nGSTIN: {c_gst_number}")
             
             pdf.set_xy(120, x_y_start)
-            pdf.multi_cell(80, 5, txt=f"Invoice No: {bill_data.get('invoice_number', 'N/A')}\nDate: {bill_data.get('invoice_date', 'N/A')}\nCategory: {bill_data.get('category', 'General')}")
+            pdf.multi_cell(80, 5, txt=f"Invoice No: {c_invoice_number}\nDate: {c_invoice_date}\nCategory: {c_category}")
             
             pdf.ln(8)
             pdf.line(5, pdf.get_y(), 205, pdf.get_y())
@@ -694,8 +710,8 @@ with tab3:
             base_total = 0
             if isinstance(line_items, list):
                 for idx, item in enumerate(line_items):
-                    i_name = str(item.get('item_name', ''))[:42]
-                    qty_str = f"{item.get('quantity', 0)} {item.get('unit', '')}"
+                    i_name = clean_text(item.get('item_name', ''))[:42]
+                    qty_str = clean_text(f"{item.get('quantity', 0)} {item.get('unit', '')}")
                     rate = float(item.get('rate', 0))
                     amt = float(item.get('amount', 0))
                     base_total += amt
@@ -738,10 +754,10 @@ with tab3:
             pdf.set_font("Arial", 'B', 10)
             pdf.cell(100, 6, "Bank Details:", 0, 1)
             pdf.set_font("Arial", '', 10)
-            pdf.multi_cell(100, 5, txt=f"{bill_data.get('bank_details', 'N/A')}\n\nTerms: E.& O.E.\n1. Goods once sold will not be taken back.")
+            pdf.multi_cell(100, 5, txt=f"{c_bank_details}\n\nTerms: E.& O.E.\n1. Goods once sold will not be taken back.")
             
             pdf.set_xy(130, pdf.get_y() - 15)
-            pdf.cell(60, 6, f"For {st.session_state.company_name}", 0, 1, 'C')
+            pdf.cell(60, 6, f"For {c_comp_name}", 0, 1, 'C')
             pdf.line(140, pdf.get_y()+8, 190, pdf.get_y()+8)
             
             pdf_out = pdf.output(dest='S')
@@ -760,7 +776,7 @@ with tab3:
                     st.download_button(
                         label="📥 Generate & Download PDF",
                         data=pdf_bytes,
-                        file_name=f"Invoice_{selected_row_data.get('vendor_name', 'Bill')}.pdf",
+                        file_name=f"Invoice_{clean_text(selected_row_data.get('vendor_name', 'Bill'))}.pdf",
                         mime="application/pdf",
                         use_container_width=True
                     )
