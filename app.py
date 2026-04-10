@@ -335,32 +335,28 @@ with tab1:
         if uploaded_file is not None and st.session_state.scanned_data is None:
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown('<div class="step-row"><div class="step-num">2</div><div class="step-label">Initiate Deep Extraction</div></div>', unsafe_allow_html=True)
-            if st.button("🚀 Process with Gemini AI", use_container_width=True):
-                with st.spinner("Neural network analyzing document structure..."):
-                    try:
-                        img = Image.open(uploaded_file)
-                        prompt = """
-                        You are an expert Data Extractor for an Indian CA.
-                        Extract details from the invoice including Vendor's Full Address and Bank Details.
-                        Determine if this is a "Purchase" invoice (goods bought) or "Sales" invoice (goods sold).
-                        Return ONLY a valid JSON:
-                        {
-                          "voucher_type": "Purchase",
-                          "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
-                          "invoice_number": "...", "invoice_date": "DD-MM-YYYY",
-                          "base_price": 0.00, "cgst_amount": 0.00, "sgst_amount": 0.00, "igst_amount": 0.00, "total_amount": 0.00, "category": "...",
-                          "line_items": [ {"item_name": "...", "hsn_code": "...", "quantity": 0.0, "unit": "...", "rate": 0.0, "amount": 0.0} ]
-                        }
-                        """
-                        ai_resp  = ai_client.models.generate_content(
-                            model='gemini-2.0-flash',
-                            contents=[img, prompt]
-                        )
-                        raw_text = ai_resp.text.strip().replace("```json", "").replace("```", "").strip()
-                        st.session_state.scanned_data = json.loads(raw_text)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Extraction failed: {e}")
+            # --- Ye wala block replace kar do ---
+if st.button("🚀 Process with Gemini AI", use_container_width=True):
+    with st.spinner("Neural network analyzing document structure..."):
+        import time
+        try:
+            img = Image.open(uploaded_file)
+            prompt = "Extract details from the invoice... (tera purana prompt)"
+            
+            # Model fixed to 1.5-flash for more stability
+            ai_resp = ai_client.models.generate_content(
+                model='gemini-1.5-flash', # <--- YE CHANGE HAI
+                contents=[img, prompt]
+            )
+            raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
+            st.session_state.scanned_data = json.loads(raw_text)
+            st.rerun()
+            
+        except Exception as api_e:
+            if "429" in str(api_e):
+                st.error("🛑 Limit Over! 1.5-Flash ki limit reset hone ka wait karein ya Nayi Key daalein.")
+            else:
+                st.error(f"❌ API Error: {api_e}")
 
     with col_preview:
         if uploaded_file is not None:
