@@ -226,6 +226,14 @@ if "admin_user" not in st.session_state: st.session_state.admin_user = "aryan"
 if "admin_pass" not in st.session_state: st.session_state.admin_pass = "admin123"
 if "company_name" not in st.session_state: st.session_state.company_name = "Stepout Studios"
 if "company_logo" not in st.session_state: st.session_state.company_logo = None
+if "scanned_data" not in st.session_state: st.session_state.scanned_data = None
+if "voice_scanned_data" not in st.session_state: st.session_state.voice_scanned_data = None
+if "ca_history" not in st.session_state: st.session_state.ca_history = []
+if "last_query" not in st.session_state: st.session_state.last_query = ""
+if "last_audio_hash" not in st.session_state: st.session_state.last_audio_hash = ""
+if "current_gst" not in st.session_state: st.session_state.current_gst = ""
+if "fetched_name" not in st.session_state: st.session_state.fetched_name = ""
+if "fetched_address" not in st.session_state: st.session_state.fetched_address = ""
 
 if not st.session_state.logged_in:
     c1, c2, c3 = st.columns([1, 1.2, 1])
@@ -295,9 +303,6 @@ ai_client    = genai.Client(api_key=AI_API_KEY)
 groq_client  = Groq(api_key=GROQ_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-if "scanned_data" not in st.session_state: st.session_state.scanned_data = None
-if "voice_scanned_data" not in st.session_state: st.session_state.voice_scanned_data = None
-
 try:
     response = supabase.table("invoices").select("*").order("id", desc=True).execute()
     db_data  = response.data
@@ -323,7 +328,7 @@ st.markdown(f"""
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["📸 Vision Scanner", "🎙️ Voice Entry", "📊 Dashboard & PDF", "⚙️ Tally Sync", "👨‍💼 Ask CA Sahab"])
 
 # ══════════════════════════════════════════════
-# TAB 1 — VISION SCANNER
+# TAB 1 — VISION SCANNER (FIXED)
 # ══════════════════════════════════════════════
 with tab1:
     col_upload, col_preview = st.columns([1, 1], gap="large")
@@ -335,28 +340,67 @@ with tab1:
         if uploaded_file is not None and st.session_state.scanned_data is None:
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown('<div class="step-row"><div class="step-num">2</div><div class="step-label">Initiate Deep Extraction</div></div>', unsafe_allow_html=True)
-            # --- Ye wala block replace kar do ---
-if st.button("🚀 Process with Gemini AI", use_container_width=True):
-    with st.spinner("Neural network analyzing document structure..."):
-        import time
-        try:
-            img = Image.open(uploaded_file)
-            prompt = "Extract details from the invoice... (tera purana prompt)"
             
-            # Model fixed to 1.5-flash for more stability
-            ai_resp = ai_client.models.generate_content(
-                model='gemini-1.5-flash', # <--- YE CHANGE HAI
-                contents=[img, prompt]
-            )
-            raw_text = ai_resp.text.strip().replace("```json","").replace("```","").strip()
-            st.session_state.scanned_data = json.loads(raw_text)
-            st.rerun()
-            
-        except Exception as api_e:
-            if "429" in str(api_e):
-                st.error("🛑 Limit Over! 1.5-Flash ki limit reset hone ka wait karein ya Nayi Key daalein.")
-            else:
-                st.error(f"❌ API Error: {api_e}")
+            if st.button("🚀 Process with Gemini AI", use_container_width=True, key="vision_btn"):
+                with st.spinner("Neural network analyzing document structure..."):
+                    try:
+                        img = Image.open(uploaded_file)
+                        prompt = """
+                        Extract all invoice details from this image. Be precise and thorough.
+                        Return ONLY valid JSON with this exact structure (no markdown, no backticks):
+                        {
+                          "voucher_type": "Purchase or Sales",
+                          "vendor_name": "Party Name",
+                          "gst_number": "GSTIN if available",
+                          "vendor_address": "Full Address",
+                          "bank_details": "Bank Info if available",
+                          "invoice_number": "Invoice Number",
+                          "invoice_date": "DD-MM-YYYY",
+                          "category": "General",
+                          "base_price": 0.0,
+                          "cgst_amount": 0.0,
+                          "sgst_amount": 0.0,
+                          "igst_amount": 0.0,
+                          "total_amount": 0.0,
+                          "line_items": [
+                            {
+                              "item_name": "Product Name",
+                              "hsn_code": "HSN Code",
+                              "quantity": 0.0,
+                              "unit": "Nos",
+                              "rate": 0.0,
+                              "amount": 0.0
+                            }
+                          ]
+                        }
+                        """
+                        
+                        ai_resp = ai_client.models.generate_content(
+                            model='gemini-1.5-flash',
+                            contents=[img, prompt]
+                        )
+                        
+                        raw_text = ai_resp.text.strip()
+                        raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+                        
+                        st.session_state.scanned_data = json.loads(raw_text)
+                        st.success("✅ Extraction Complete! Scroll down to validate.")
+                        time.sleep(0.5)
+                        st.rerun()
+                        
+                    except json.JSONDecodeError as je:
+                        st.error(f"❌ JSON Parsing Failed: {str(je)[:150]}")
+                        st.code(raw_text[:500])
+                    except Exception as api_e:
+                        error_msg = str(api_e).lower()
+                        if "429" in error_msg or "quota" in error_msg or "resource_exhausted" in error_msg:
+                            st.error("🛑 **API Quota Exceeded!** Gemini 1.5-Flash ki limit khatam. Thodi der wait karo ya API key refresh karo.")
+                        elif "invalid" in error_msg or "api_key" in error_msg:
+                            st.error("❌ **Invalid API Key!** Secrets mein AI_API_KEY check karo.")
+                        elif "image" in error_msg or "mime" in error_msg:
+                            st.error("⚠️ **Image Format Issue!** Sirf JPG/PNG upload karo.")
+                        else:
+                            st.error(f"❌ Unexpected Error: {str(api_e)[:200]}")
 
     with col_preview:
         if uploaded_file is not None:
@@ -364,6 +408,8 @@ if st.button("🚀 Process with Gemini AI", use_container_width=True):
             st.markdown('<div class="preview-frame">', unsafe_allow_html=True)
             st.image(uploaded_file, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("👈 Pehle invoice upload karo left side se")
 
     if st.session_state.scanned_data is not None:
         data = st.session_state.scanned_data
@@ -416,13 +462,17 @@ if st.button("🚀 Process with Gemini AI", use_container_width=True):
                     "total_amount": v_total, "category": v_cat,
                     "line_items": edited_df.to_dict(orient='records')
                 }
-                supabase.table("invoices").insert(final_data).execute()
-                st.session_state.scanned_data = None
-                st.success("✅ Transaction log secured in cloud storage!")
-                st.rerun()
+                try:
+                    supabase.table("invoices").insert(final_data).execute()
+                    st.session_state.scanned_data = None
+                    st.success("✅ Transaction log secured in cloud storage!")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as db_e:
+                    st.error(f"❌ Database Error: {str(db_e)[:200]}")
 
 # ══════════════════════════════════════════════
-# TAB 2 — VOICE ENTRY
+# TAB 2 — VOICE ENTRY (FIXED)
 # ══════════════════════════════════════════════
 with tab2:
     st.markdown('<div class="section-title">🎙️ Neural Voice Capture</div>', unsafe_allow_html=True)
@@ -431,7 +481,7 @@ with tab2:
     audio_value = st.audio_input("Initialize Voice Recording", label_visibility="collapsed")
 
     if audio_value is not None and st.session_state.voice_scanned_data is None:
-        if st.button("🚀 Transcribe & Generate", use_container_width=True):
+        if st.button("🚀 Transcribe & Generate", use_container_width=True, key="voice_btn"):
             with st.spinner("Running acoustic models and calculating GST..."):
                 try:
                     audio_prompt = """
@@ -439,7 +489,7 @@ with tab2:
                     Determine if the user is BUYING (Purchase) or SELLING (Sales).
                     Extract the party name, GST number (if mentioned), Address, items, quantities and rates.
                     If GST percentage is mentioned, calculate the Base Price, CGST & SGST (if local) or IGST (if interstate).
-                    Return ONLY a valid JSON:
+                    Return ONLY a valid JSON (no markdown, no backticks):
                     {
                       "voucher_type": "Purchase",
                       "vendor_name": "...", "gst_number": "...", "vendor_address": "...", "bank_details": "...",
@@ -447,36 +497,42 @@ with tab2:
                       "line_items": [{"item_name": "...", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
                     }
                     """
-                    resp       = ai_client.models.generate_content(
-                        model='gemini-2.0-flash',
+                    resp = ai_client.models.generate_content(
+                        model='gemini-2.0-flash-exp',
                         contents=[types.Part.from_bytes(data=audio_value.getvalue(), mime_type='audio/wav'), audio_prompt]
                     )
                     clean_json = resp.text.strip().replace("```json", "").replace("```", "").strip()
                     st.session_state.voice_scanned_data = json.loads(clean_json)
+                    st.success("✅ Voice transcription successful!")
+                    time.sleep(0.5)
                     st.rerun()
+                except json.JSONDecodeError as je:
+                    st.error(f"❌ JSON Parsing Failed: {str(je)[:150]}")
                 except Exception as e:
-                    st.error(f"❌ Audio processing error: {e}")
+                    error_msg = str(e).lower()
+                    if "429" in error_msg or "quota" in error_msg:
+                        st.error("🛑 Audio API quota khatam! Wait karo ya key refresh karo.")
+                    else:
+                        st.error(f"❌ Audio processing error: {str(e)[:200]}")
 
     if st.session_state.voice_scanned_data is not None:
         v_data = st.session_state.voice_scanned_data
         st.markdown('<div class="fancy-divider"></div><div class="section-title">✏️ Validate Audio Transcript</div>', unsafe_allow_html=True)
 
         st.markdown("**🏢 Party Info (Auto-Fetch)**")
-        if "current_gst"    not in st.session_state: st.session_state.current_gst    = v_data.get("gst_number", "")
-        if "fetched_name"   not in st.session_state: st.session_state.fetched_name   = v_data.get("vendor_name", "")
-        if "fetched_address" not in st.session_state: st.session_state.fetched_address = v_data.get("vendor_address", "")
-
+        
         g1, g2 = st.columns([3, 1])
         with g1:
-            voice_gst = st.text_input("GST Number", value=st.session_state.current_gst)
+            voice_gst = st.text_input("GST Number", value=st.session_state.current_gst or v_data.get("gst_number", ""), key="voice_gst_input")
         with g2:
             st.markdown("<br>", unsafe_allow_html=True)
-            fetch_btn = st.button("🔍 Fetch API", use_container_width=True)
+            fetch_btn = st.button("🔍 Fetch API", use_container_width=True, key="fetch_gst_btn")
 
         if fetch_btn and voice_gst:
             with st.spinner("Fetching from Server..."):
+                st.session_state.current_gst = voice_gst
                 dummy_db = {
-                    "10AABCU9355J1Z9": {"name": "Jai Shree Ram Packaging", "address": "Uttar Pradesh, India"},
+                    "10AABCU9603J1Z9": {"name": "Jai Shree Ram Packaging", "address": "Uttar Pradesh, India"},
                     "07AABCB1234C1Z1": {"name": "Stepout Studios",          "address": "Delhi, India"}
                 }
                 api_key  = "2bc451a563msh61eee8c6a8a1ef0p1586c6jsnb626801c0c68"
@@ -484,7 +540,7 @@ with tab2:
                 headers  = {"X-RapidAPI-Key": api_key, "X-RapidAPI-Host": "gst-verification.p.rapidapi.com"}
                 api_success = False
                 try:
-                    res = requests.get(url, headers=headers, params={"gstin": voice_gst}, timeout=3)
+                    res = requests.get(url, headers=headers, params={"gstin": voice_gst}, timeout=5)
                     if res.status_code == 200:
                         d = res.json()
                         st.session_state.fetched_name    = d.get('data', {}).get('tradeName', '')
@@ -500,6 +556,7 @@ with tab2:
 
                 if api_success:
                     st.success(f"✅ Auto-filled: {st.session_state.fetched_name}")
+                    st.rerun()
                 else:
                     st.warning("⚠️ API failed. Please enter manually.")
 
@@ -514,13 +571,16 @@ with tab2:
             with c2: voice_date   = st.text_input("Timestamp",    value="2026-04-09")
 
             r1, r2 = st.columns(2)
-            with r1: final_vendor_name = st.text_input("Legal Name",          value=st.session_state.fetched_name)
-            with r2: final_address     = st.text_input("Registered Address",  value=st.session_state.fetched_address)
+            with r1: final_vendor_name = st.text_input("Legal Name",          value=st.session_state.fetched_name or v_data.get("vendor_name", ""))
+            with r2: final_address     = st.text_input("Registered Address",  value=st.session_state.fetched_address or v_data.get("vendor_address", ""))
 
             voice_bank = st.text_input("Bank / Payment Details", value=v_data.get("bank_details", ""))
 
             st.markdown("**📦 Detected Inventory Items**")
-            voice_edited_df = st.data_editor(pd.DataFrame(v_data.get("line_items", [])), num_rows="dynamic", use_container_width=True)
+            voice_items = v_data.get("line_items", [])
+            if not voice_items:
+                voice_items = [{"item_name": "", "quantity": 0.0, "unit": "Nos", "rate": 0.0, "amount": 0.0}]
+            voice_edited_df = st.data_editor(pd.DataFrame(voice_items), num_rows="dynamic", use_container_width=True)
 
             st.markdown("**💰 Financials & Taxation**")
             t1, t2, t3, t4, t5 = st.columns(5)
@@ -530,6 +590,7 @@ with tab2:
             with t4: v_igst     = st.number_input("IGST ₹",         value=float(v_data.get("igst_amount", 0.0)))
             with t5: voice_total = st.number_input("Gross Amount ₹", value=float(v_data.get("total_amount", 0.0)))
 
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.form_submit_button("✅ Commit Voice Entry", use_container_width=True):
                 voice_final_data = {
                     "voucher_type": voice_type, "vendor_name": final_vendor_name,
@@ -540,13 +601,17 @@ with tab2:
                     "total_amount": voice_total, "category": "Voice Entry",
                     "line_items": voice_edited_df.to_dict(orient='records')
                 }
-                supabase.table("invoices").insert(voice_final_data).execute()
-                st.session_state.voice_scanned_data = None
-                st.session_state.fetched_name       = ""
-                st.session_state.fetched_address    = ""
-                st.session_state.current_gst        = ""
-                st.success("✅ Voice transaction secured!")
-                st.rerun()
+                try:
+                    supabase.table("invoices").insert(voice_final_data).execute()
+                    st.session_state.voice_scanned_data = None
+                    st.session_state.fetched_name       = ""
+                    st.session_state.fetched_address    = ""
+                    st.session_state.current_gst        = ""
+                    st.success("✅ Voice transaction secured!")
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as db_e:
+                    st.error(f"❌ Database Error: {str(db_e)[:200]}")
 
 # ══════════════════════════════════════════════
 # TAB 3 — DASHBOARD & PDF
@@ -781,44 +846,19 @@ with tab4:
         st.download_button(label="📥 Initialize Download (KhataAI_ERP.xml)", data=generate_tally_xml(selected_invoices), file_name="KhataAI_ERP_Import.xml", mime="application/xml", use_container_width=True)
 
 # ══════════════════════════════════════════════
-# TAB 5 — CA SAHAB WITH VOICE INPUT + MALE TTS
+# TAB 5 — CA SAHAB (FIXED WITH BETTER TTS)
 # ══════════════════════════════════════════════
 with tab5:
-
-    async def generate_male_voice(text: str) -> bytes:
-        try:
-            import edge_tts
-            voice       = "hi-IN-MadhurNeural"
-            communicate = edge_tts.Communicate(text, voice)
-            audio_buffer = io.BytesIO()
-            async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    audio_buffer.write(chunk["data"])
-            audio_buffer.seek(0)
-            return audio_buffer.read()
-        except Exception:
-            return b""
-
-    def get_male_audio(text: str) -> bytes:
-        try:
-            loop   = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(generate_male_voice(text))
-            loop.close()
-            return result
-        except Exception:
-            return b""
-
     st.markdown('<div class="section-title">👨‍💼 CA Sahab - Aapka Business Partner</div>', unsafe_allow_html=True)
-
-    if st.button("New Discussion 🔄"):
-        st.session_state.ca_history      = []
-        st.session_state.last_query      = ""
-        st.session_state.last_audio_hash = ""
-        st.rerun()
 
     if "ca_history" not in st.session_state or not st.session_state.ca_history:
         st.session_state.ca_history = [{"role": "assistant", "text": "Arre Aryan bhai, swagat hai! Tension mat lo, CA Sahab aa gaye hain. Boliye, aaj kaunsa bada kaand... mera matlab hai, kaunsa bada business deal set karna hai? 😎"}]
+
+    if st.button("🔄 New Discussion", key="ca_reset_btn"):
+        st.session_state.ca_history      = [{"role": "assistant", "text": "Nayi shuruat! Bolo kya puchna hai CA Sahab se? 🚀"}]
+        st.session_state.last_query      = ""
+        st.session_state.last_audio_hash = ""
+        st.rerun()
 
     for msg in st.session_state.ca_history:
         with st.chat_message(msg["role"]):
@@ -827,16 +867,16 @@ with tab5:
     st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">🎤 Apna Sawal Puchho</div>', unsafe_allow_html=True)
 
-    input_mode  = st.radio("Input Mode:", ["⌨️ Type", "🎙️ Voice"], horizontal=True)
+    input_mode  = st.radio("Input Mode:", ["⌨️ Type", "🎙️ Voice"], horizontal=True, key="ca_input_mode")
     final_query = None
 
     if input_mode == "⌨️ Type":
         final_query = st.chat_input("Apna solid sawal yahan likho...")
     else:
         st.info("🎙️ Mic press karo, apna sawal bolo, phir 'Transcribe' dabao")
-        voice_question = st.audio_input("Yahan bolo apna sawal:", label_visibility="collapsed")
+        voice_question = st.audio_input("Yahan bolo apna sawal:", label_visibility="collapsed", key="ca_voice_input")
         if voice_question is not None:
-            if st.button("🔍 Transcribe & Ask CA Sahab", use_container_width=True):
+            if st.button("🔍 Transcribe & Ask CA Sahab", use_container_width=True, key="ca_transcribe_btn"):
                 with st.spinner("Awaaz sun raha hoon... 👂"):
                     try:
                         transcription = groq_client.audio.transcriptions.create(
@@ -848,80 +888,65 @@ with tab5:
                         final_query = str(transcription).strip()
                         st.success(f"✅ Suna mujhe: **{final_query}**")
                     except Exception as e:
-                        st.error(f"❌ Transcription fail: {str(e)[:100]}")
+                        st.error(f"❌ Transcription fail: {str(e)[:150]}")
 
-    if final_query and final_query.strip():
-        if "last_query" not in st.session_state:
-            st.session_state.last_query = ""
+    if final_query and final_query.strip() and st.session_state.last_query != final_query.strip():
+        st.session_state.last_query = final_query.strip()
+        st.session_state.ca_history.append({"role": "user", "text": final_query})
 
-        if st.session_state.last_query != final_query.strip():
-            st.session_state.last_query = final_query.strip()
-            st.session_state.ca_history.append({"role": "user", "text": final_query})
+        with st.chat_message("user"):
+            st.markdown(final_query)
 
-            with st.chat_message("user"):
-                st.markdown(final_query)
+        with st.chat_message("assistant"):
+            with st.spinner("CA Sahab dimaag laga rahe hain... 🧠"):
+                try:
+                    system_instructions = """
+                    You are 'CA Sahab'. You are NOT a robot. You are a high-level, elite Indian Chartered Accountant who talks like a mentor and a friend.
+                    - Use 'Hinglish' (Hindi in English script).
+                    - Be confident, solid, and epic. Use words like 'Bhai', 'Bindass', 'Solid', 'System'.
+                    - Don't give boring textbook answers. Give practical, 'dhandha' oriented advice.
+                    - Keep it human. If the user asks something simple, reply with wit.
+                    - IMPORTANT: Never start your answer the same way. Be fresh every time!
+                    - Keep responses concise - 3-5 sentences max unless asked for details.
+                    """
 
-            with st.chat_message("assistant"):
-                with st.spinner("CA Sahab dimaag laga rahe hain... 🧠"):
-                    try:
-                        system_instructions = """
-                        You are 'CA Sahab'. You are NOT a robot. You are a high-level, elite Indian Chartered Accountant who talks like a mentor and a friend.
-                        - Use 'Hinglish' (Hindi in English script).
-                        - Be confident, solid, and epic. Use words like 'Bhai', 'Bindass', 'Solid', 'System'.
-                        - Don't give boring textbook answers. Give practical, 'dhandha' oriented advice.
-                        - Keep it human. If the user asks something simple, reply with wit.
-                        - IMPORTANT: Never start your answer the same way. Be fresh every time!
-                        """
+                    messages_for_api = [{"role": "system", "content": system_instructions}]
+                    for h in st.session_state.ca_history[:-1]:
+                        messages_for_api.append({"role": h["role"], "content": h["text"]})
+                    messages_for_api.append({"role": "user", "content": final_query})
 
-                        messages_for_api = [{"role": "system", "content": system_instructions}]
-                        for h in st.session_state.ca_history[:-1]:
-                            messages_for_api.append({
-                                "role":    h["role"],
-                                "content": h["text"]
-                            })
-                        messages_for_api.append({"role": "user", "content": final_query})
+                    response = groq_client.chat.completions.create(
+                        messages=messages_for_api,
+                        model="llama-3.3-70b-versatile",
+                        temperature=0.85,
+                        top_p=0.9,
+                        max_tokens=800
+                    )
+                    ans = response.choices[0].message.content
+                    st.markdown(f'<div style="line-height: 1.6;">{ans}</div>', unsafe_allow_html=True)
+                    st.session_state.ca_history.append({"role": "assistant", "text": ans})
 
-                        response = groq_client.chat.completions.create(
-                            messages=messages_for_api,
-                            model="llama-3.3-70b-versatile",
-                            temperature=0.85,
-                            top_p=0.9,
-                            max_tokens=1024
-                        )
-                        ans = response.choices[0].message.content
-                        st.markdown(f'<div style="line-height: 1.6;">{ans}</div>', unsafe_allow_html=True)
-                        st.session_state.ca_history.append({"role": "assistant", "text": ans})
+                    st.markdown("---")
+                    st.markdown("**🔊 CA Sahab bol rahe hain...**")
 
-                        st.markdown("---")
-                        st.markdown("**🔊 CA Sahab bol rahe hain...**")
+                    current_hash = hashlib.md5(ans.encode()).hexdigest()
+                    
+                    if st.session_state.last_audio_hash != current_hash:
+                        with st.spinner("🎙️ Awaaz taiyaar ho rahi hai..."):
+                            clean_ans = ans.replace("*", "").replace("#", "").replace("`", "").replace("_", "").strip()
+                            if len(clean_ans) > 2000:
+                                clean_ans = clean_ans[:2000] + "..."
 
-                        current_hash = hashlib.md5(ans.encode()).hexdigest()
-                        if "last_audio_hash" not in st.session_state:
-                            st.session_state.last_audio_hash = ""
+                            try:
+                                tts = gTTS(text=clean_ans, lang='hi', slow=False)
+                                audio_buffer = io.BytesIO()
+                                tts.write_to_fp(audio_buffer)
+                                audio_buffer.seek(0)
+                                st.audio(audio_buffer, format='audio/mp3', autoplay=False)
+                                st.session_state.last_audio_hash = current_hash
+                                st.success("✅ Solid awaaz taiyaar! Play karo. 🎙️")
+                            except Exception as tts_error:
+                                st.warning(f"⚠️ Voice generation fail: {str(tts_error)[:100]}")
 
-                        if st.session_state.last_audio_hash != current_hash:
-                            with st.spinner("🎙️ Awaaz taiyaar ho rahi hai..."):
-                                clean_ans = ans.replace("*", "").replace("#", "").replace("`", "").replace("_", "").strip()
-                                if len(clean_ans) > 3000:
-                                    clean_ans = clean_ans[:3000] + "..."
-
-                                audio_bytes = get_male_audio(clean_ans)
-
-                                if audio_bytes and len(audio_bytes) > 1000:
-                                    st.audio(audio_bytes, format="audio/mp3", autoplay=False)
-                                    st.session_state.last_audio_hash = current_hash
-                                    st.success("✅ Solid awaaz taiyaar! Play karo. 🎙️")
-                                else:
-                                    try:
-                                        tts             = gTTS(text=clean_ans[:2000], lang='hi', slow=False)
-                                        fallback_buffer = io.BytesIO()
-                                        tts.write_to_fp(fallback_buffer)
-                                        fallback_buffer.seek(0)
-                                        st.audio(fallback_buffer, format='audio/mp3', autoplay=False)
-                                        st.session_state.last_audio_hash = current_hash
-                                        st.info("🔊 Fallback voice use hua (edge_tts unavailable)")
-                                    except Exception:
-                                        st.warning("⚠️ Voice abhi available nahi. Text padh lo bhai!")
-
-                    except Exception as api_error:
-                        st.error(f"❌ CA Sahab ko connect nahi kar paye: {str(api_error)[:150]}")
+                except Exception as api_error:
+                    st.error(f"❌ CA Sahab ko connect nahi kar paye: {str(api_error)[:200]}")
